@@ -45,6 +45,8 @@ pip install khl.py
 }
 ```
 
+另外，请删除掉`L18-24`和`botmarket`相关的内容。避免接口冲突！
+
 * 运行bot
 
 ~~~
