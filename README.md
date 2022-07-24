@@ -14,6 +14,12 @@ BattleMetrics是一个游戏服务器聚合网站，可以追踪并查询游戏�
 | `/BMhelp`        | 帮助命令，起这个名字是防止冲突                 |
 | `/BM 萌新 hll 4` | 显示游戏`hll`服务器中名称包含`萌新`的前4个结果 |
 
+
+结果示例图：
+
+<img src="https://s1.ax1x.com/2022/07/24/jjwsNd.png" wight="400px" height="330px">
+
+
 ## 私有部署
 * 依赖项
 
