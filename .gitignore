@@ -2,3 +2,4 @@ config.json
 botmarket.json
 bot.log
 
+code/__pycache__
