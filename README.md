@@ -48,7 +48,7 @@ pip install khl.py
 * 运行bot
 
 ~~~
-python3 main.py
+python3 BM_main.py
 ~~~
 
 ## 最后
