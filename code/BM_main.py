@@ -89,16 +89,16 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
         
         await msg.reply(cm)
     except Exception as result:
-        await msg.reply("很抱歉，发生了一些错误!\n提示:出现json错误是因为查询结果不存在\n\n报错: %s"%result)
-        # ret = str(result)
-        # c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
-        # c.append(Module.Divider())
-        # c.append(f"错误: {result}\n")
-        # c.append(Module.Divider())
-        # c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-        #       Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
-        # cm.append(c)
-        # await msg.reply(cm)
+        #await msg.reply("很抱歉，发生了一些错误!\n提示:出现json错误是因为查询结果不存在\n\n报错: %s"%result)
+        ret = str(result)
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
+        c.append(Module.Divider())
+        c.append(Module.Section(f"报错:\n{result}\n"))
+        c.append(Module.Divider())
+        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+        cm.append(c)
+        await msg.reply(cm)
     
 # 开跑！
 bot.run()
