@@ -15,6 +15,17 @@ with open('./config/config.json', 'r', encoding='utf-8') as f:
 bot = Bot(token=config['token'])
 
 
+# 向botmarket通信
+@bot.task.add_interval(minutes=30)
+async def botmarket():
+    api ="http://bot.gekj.net/api/v1/online.bot"
+    headers = {'uuid':'fbb98686-91fe-46b5-be2c-cf146cccc822'}
+    async with aiohttp.ClientSession() as session:
+        await session.post(api, headers=headers)
+    
+
+######################################################################################
+
 # 在控制台打印msg内容，用作日志
 def logging(msg: Message):
     now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
@@ -38,7 +49,7 @@ async def Help(msg: Message):
     c3.append(Module.Section(Element.Text('参数: 服务器名，游戏名，显示前几个搜索结果\n使用示例：`/BM 萌新 hll 4`\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n',Types.Text.KMD)))
     c3.append(Module.Divider())
     c3.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+              Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
     cm.append(c3)
     await msg.reply(cm)
 
