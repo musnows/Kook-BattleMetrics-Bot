@@ -115,7 +115,10 @@ async def player_check(msg: Message, player_id: str, server_id: str):
                 ret1 = json.loads(await response.text())
 
         sec = ret1['data']['attributes']['timePlayed']
-        time_played=strftime("%H时%M分%S秒", gmtime(sec))
+        #time_played=strftime("%H时%M分%S秒", gmtime(sec))
+        m, s = divmod(sec, 60)
+        h, m = divmod(m, 60)
+        time_played = f"{h}时{m}分{s}秒"
 
         url2=dad+f"/servers/{server_id}"
         async with aiohttp.ClientSession() as session:
