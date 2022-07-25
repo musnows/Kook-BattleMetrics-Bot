@@ -3,6 +3,8 @@ import json
 import aiohttp
 import time
 
+from time import strftime, gmtime
+
 from khl import Bot, Message
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
 
@@ -13,6 +15,8 @@ with open('./config/config.json', 'r', encoding='utf-8') as f:
     config = json.load(f)
 # 用读取来的 config 初始化 bot
 bot = Bot(token=config['token'])
+
+dad = "https://api.battlemetrics.com" #bm的父url
 
 
 # 向botmarket通信
@@ -29,7 +33,7 @@ async def botmarket():
 # 在控制台打印msg内容，用作日志
 def logging(msg: Message):
     now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
-    print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} - Content:{msg.content}")
+    print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
 
 
 # 测试bot是否上线
@@ -59,7 +63,7 @@ async def Help(msg: Message):
 async def check(msg: Message, name: str, game: str,max:int = 3):
     logging(msg)
     try:
-        url = f'https://api.battlemetrics.com/servers?filter[search]={name}&filter[game]={game}'
+        url = dad+f'/servers?filter[search]={name}&filter[game]={game}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 ret = json.loads(await response.text())
@@ -90,7 +94,7 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
         await msg.reply(cm)
     except Exception as result:
         #await msg.reply("很抱歉，发生了一些错误!\n提示:出现json错误是因为查询结果不存在\n\n报错: %s"%result)
-        ret = str(result)
+        cm = CardMessage()
         c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
         c.append(Module.Divider())
         c.append(Module.Section(f"报错:\n{result}\n"))
@@ -100,5 +104,42 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
         cm.append(c)
         await msg.reply(cm)
     
+# 查看玩家在某个服务器玩了多久，需要玩家id
+@bot.command(name='py',aliases=['player'])
+async def player_check(msg: Message, player_id: str, server_id: str):
+    logging(msg)
+    try:
+        url1 = dad+f'/players/{player_id}/servers/{server_id}'
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url1) as response:
+                ret1 = json.loads(await response.text())
+
+        sec = ret1['data']['attributes']['timePlayed']
+        time_played=strftime("%H时%M分%S秒", gmtime(sec))
+
+        url2=dad+f"/servers/{server_id}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url2) as response:
+                ret2 = json.loads(await response.text())
+
+        server_name = ret2['data']['attributes']['name']
+
+        await msg.reply(f"你已经在服务器: `{server_name}`\n玩了{time_played}，真不错！")
+
+
+
+    except Exception as result:
+        cm = CardMessage()
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
+        c.append(Module.Divider())
+        c.append(Module.Section(f"报错:\n{result}\n"))
+        c.append(Module.Divider())
+        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+
+        cm.append(c)
+        await msg.reply(cm)
+
+
 # 开跑！
 bot.run()
