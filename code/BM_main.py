@@ -233,8 +233,8 @@ ServerDict = {
 }
 
 #保存服务器id的对应关系
-@bot.command()
-async def save(msg: Message,server:str,icon:str=""):
+@bot.command(name='BMlook',aliases=['监看'])
+async def save_dict(msg: Message,server:str,icon:str=""):
     logging(msg)
     global  ServerDict
     ServerDict['guild']=msg.ctx.guild.id
@@ -251,8 +251,10 @@ async def save(msg: Message,server:str,icon:str=""):
             flag =1
             break
 
-    if flag ==1:
+    if flag ==1 and icon !="":
         await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
+    elif flag ==1 and icon =="":
+        await msg.reply(f"本频道已经订阅了服务器{server}的更新信息")
     else:
         data.append(ServerDict)#没有找到，就添加进去
         await msg.reply(f'服务器监看系统已添加！')
@@ -261,6 +263,38 @@ async def save(msg: Message,server:str,icon:str=""):
     with open("./log/server.json",'w',encoding='utf-8') as fw1:
         json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
     fw1.close()
+
+# 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
+@bot.command(name='td',aliases=['退订'])#td退订
+async def Cancel_Dict(msg: Message,server:str=""):
+    logging(msg)
+    global  ServerDict
+    emptyList = list() #创建空list
+    with open("./log/server.json",'r',encoding='utf-8') as fr1:
+        data = json.load(fr1)
+    for s in data:
+        #如果吻合，则执行删除操作
+        if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server']==server:
+            print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
+            await msg.reply(f"已成功取消{server}的监看")
+        elif s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and server=="":
+            print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM: ALL")
+            await msg.reply(f"已成功取消本频道下所有监看")
+        else: # 不吻合，进行插入
+            #先自己创建一个元素
+            ServerDict['guild']=s['guild']
+            ServerDict['channel']=s['channel']
+            ServerDict['bm_server']=s['bm_server']
+            ServerDict['icon']=s['icon']
+            ServerDict['msg_id']=s['msg_id']
+            #插入进空list
+            emptyList.append(ServerDict)
+
+    #最后重新执行写入
+    with open("./log/server.json",'w',encoding='utf-8') as fw1:
+        json.dump(emptyList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
+    fw1.close()
+
 
 
 # 实时检测并更新
