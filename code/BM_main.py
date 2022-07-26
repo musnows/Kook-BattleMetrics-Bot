@@ -53,7 +53,7 @@ async def Help(msg: Message):
     c3 = Card(Module.Header('目前bm小助手支持的指令如下！'))
     c3.append(Module.Divider())
     #实现卡片的markdown文本
-    c3.append(Module.Section(Element.Text('服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n使用示例：`/BM 萌新 hll 4`\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n\n`/py 玩家id 服务器id`查询玩家在该服务器游玩时长\n',Types.Text.KMD)))
+    c3.append(Module.Section(Element.Text('服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n使用示例:`/BM 萌新 hll 4`\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n\n`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长\n`/sv 服务器id` 查询指定服务器的相关信息\n`/监看 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率128*128，且不要在图标周围留太多空白\n`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看',Types.Text.KMD)))
     c3.append(Module.Divider())
     c3.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
               Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
