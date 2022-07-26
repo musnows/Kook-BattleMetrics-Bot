@@ -69,7 +69,7 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
                 ret = json.loads(await response.text())
 
         count = 1
-        cm = CardMessage()
+        cm1 = CardMessage()
         for server in ret['data']:
             if count > max:
                 break #只显示前3个结果
@@ -88,21 +88,22 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
                                     Types.Text.KMD),
                         Element.Text(f"**当前地区 \n**" + f"{server['attributes']['country']}" + "    \n"+"**Players **\n"f"{server['attributes']['players']}/{server['attributes']['maxPlayers']}",
                                     Types.Text.KMD))))
-            cm.append(c)
+            cm1.append(c)
             count += 1
 
-        await msg.reply(cm)
+        await msg.reply(cm1)
     except Exception as result:
         #await msg.reply("很抱歉，发生了一些错误!\n提示:出现json错误是因为查询结果不存在\n\n报错: %s"%result)
-        cm = CardMessage()
+        cm2 = CardMessage()
         c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
         c.append(Module.Divider())
         c.append(Module.Section(f"报错:\n{result}\n"))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
               Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
-        cm.append(c)
-        await msg.reply(cm)
+        cm2.append(c)
+        await msg.reply(cm2)
+
 
 # 查看玩家在某个服务器玩了多久，需要玩家id
 @bot.command(name='py',aliases=['player'])
@@ -115,7 +116,6 @@ async def player_check(msg: Message, player_id: str, server_id: str):
                 ret1 = json.loads(await response.text())
 
         sec = ret1['data']['attributes']['timePlayed']
-        #time_played=strftime("%H时%M分%S秒", gmtime(sec))
         m, s = divmod(sec, 60)
         h, m = divmod(m, 60)
         time_played = f"{h}时{m}分{s}秒"
@@ -126,10 +126,7 @@ async def player_check(msg: Message, player_id: str, server_id: str):
                 ret2 = json.loads(await response.text())
 
         server_name = ret2['data']['attributes']['name']
-
         await msg.reply(f"你已经在服务器: `{server_name}`\n玩了{time_played}，真不错！")
-
-
 
     except Exception as result:
         cm = CardMessage()
@@ -139,7 +136,6 @@ async def player_check(msg: Message, player_id: str, server_id: str):
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
               Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
-
         cm.append(c)
         await msg.reply(cm)
 
