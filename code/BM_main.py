@@ -298,7 +298,7 @@ async def Cancel_Dict(msg: Message,server:str=""):
 
 
 # 实时检测并更新
-@bot.task.add_interval(minutes=1)
+@bot.task.add_interval(minutes=20)
 async def update_Server():
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         bmlist = json.load(fr1)
