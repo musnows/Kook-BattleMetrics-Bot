@@ -272,12 +272,15 @@ async def Cancel_Dict(msg: Message,server:str=""):
     emptyList = list() #创建空list
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         data = json.load(fr1)
+    flag=0 #用于判断
     for s in data:
         #如果吻合，则执行删除操作
         if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server']==server:
+            flag=1
             print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
             await msg.reply(f"已成功取消{server}的监看")
         elif s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and server=="":
+            flag=1
             print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM: ALL")
             await msg.reply(f"已成功取消本频道下所有监看")
         else: # 不吻合，进行插入
@@ -295,6 +298,8 @@ async def Cancel_Dict(msg: Message,server:str=""):
         json.dump(emptyList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
     fw1.close()
 
+    if flag == 0:
+        await msg.reply(f"本频道暂未开启任何服务器监看")
 
 
 # 实时检测并更新
