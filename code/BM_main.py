@@ -2,6 +2,7 @@
 import json
 from lib2to3.pgen2.token import LESSEQUAL
 from mailbox import linesep
+from sys import flags
 import aiohttp
 import time
 
@@ -158,25 +159,33 @@ async def player_check(msg: Message, player_id: str, server_id: str):
 #####################################服务器实时监控############################################
 
 # 检查指定服务器并更新
-async def ServerCheck(id:str,icon:str):
+async def ServerCheck(id:str,icon:str=""):
     url = f"https://api.battlemetrics.com/servers/{id}"# bm服务器id
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             ret1 = json.loads(await response.text())
 
         print(f"\nGET: {ret1}\n")
-        # 确认状态情况（依据玩家数量进行判断）
+        server = ret1['data']
+        # 确认状态情况
         emoji = ":green_circle:"
-        if ret1['data']['attributes']['players'] == 0:
+        if server['attributes']['status'] != "online":
             emoji = ":red_circle:"
+
+        #需要判断是否包含map值
+        check_map=f"{server}"
+        if 'map' in check_map:
+            MAPstatus=server['attributes']['details']['map']
+        else:
+            MAPstatus="-"
 
         cm = CardMessage()
         if icon == "": #没有图标
-            c = Card(Module.Header(f"{ret1['data']['attributes']['name']}"), Module.Context(f"id: {ret1['data']['id']}"))
+            c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}"))
         else: #有图标
             c = Card(
             Module.Section(
-                Element.Text(f"{ret1['data']['attributes']['name']}",
+                Element.Text(f"{server['attributes']['name']}",
                                 Types.Text.KMD),
                 Element.Image(
                     src="https://s1.ax1x.com/2022/07/24/jXqRL8.png",
@@ -190,22 +199,30 @@ async def ServerCheck(id:str,icon:str):
                     3,
                     Element.Text(
                         f"**状态 **\n" + f"{emoji}" + "   \n" + "**地图 **\n" +
-                        f"{ret1['data']['attributes']['details']['map']}",
+                        f"{MAPstatus}",
                         Types.Text.KMD),
                     Element.Text(
-                        f"**服务器ip \n**" + f"{ret1['data']['attributes']['ip']}" +
+                        f"**服务器ip \n**" + f"{server['attributes']['ip']}" +
                         "     \n" + "**rank **\n" +
-                        f"#{ret1['data']['attributes']['rank']}",
+                        f"#{server['attributes']['rank']}",
                         Types.Text.KMD),
                     Element.Text(
                         f"**当前地区 \n**" +
-                        f"{ret1['data']['attributes']['country']}" + "    \n" +
+                        f"{server['attributes']['country']}" + "    \n" +
                         "**Players **\n"
-                        f"{ret1['data']['attributes']['players']}/{ret1['data']['attributes']['maxPlayers']}",
+                        f"{server['attributes']['players']}/{server['attributes']['maxPlayers']}",
                         Types.Text.KMD))))
         cm.append(c)
         return cm
  
+# 手动指定服务器id查询
+@bot.command(name='sv',aliases=['server'])
+async def check_server_id(msg:Message,server:str):
+    logging(msg)
+    cm = await ServerCheck(server)
+    await msg.reply(cm)
+
+
 # 用于保存实时监控信息的字典
 ServerDict = {
     'guild': '', 
@@ -218,29 +235,36 @@ ServerDict = {
 #保存服务器id的对应关系
 @bot.command()
 async def save(msg: Message,server:str,icon:str=""):
+    logging(msg)
     global  ServerDict
     ServerDict['guild']=msg.ctx.guild.id
     ServerDict['channel']=msg.ctx.channel.id
     ServerDict['bm_server']=server
     ServerDict['icon']=icon
 
+    flag = 0
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         data = json.load(fr1)
     for s in data:
         if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server'] == server:
-            s['icon']=icon #如果其余三个条件都吻合，即更新icon
-            await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
+            s['icon']= icon #如果其余三个条件都吻合，即更新icon
+            flag =1
+            break
 
-
-    with open("./log/server.json",'a+',encoding='utf-8') as fw1:
-        json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)
-        await msg.reply(f'本狸已经记下你的游戏id啦!')
+    if flag ==1:
+        await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
+    else:
+        data.append(ServerDict)#没有找到，就添加进去
+        await msg.reply(f'服务器监看系统已添加！')
+    
+    #不管是否已存在，都需要重新执行写入（更新/添加）
+    with open("./log/server.json",'w',encoding='utf-8') as fw1:
+        json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
     fw1.close()
 
 
-
 # 实时检测并更新
-@bot.task.add_interval(minutes=20)
+@bot.task.add_interval(minutes=1)
 async def update_Server():
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         bmlist = json.load(fr1)
@@ -253,12 +277,13 @@ async def update_Server():
         cm =await ServerCheck(s['bm_server'],s['icon'])#获取卡片消息
         
         now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
-        url = kook+"/api/v3/message/delete"#删除旧的服务器信息
-        params = {"msg_id":s['msg_id']}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=params,headers=headers) as response:
-                    ret=json.loads(await response.text())
-                    print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回值
+        if s['msg_id'] != "":
+            url = kook+"/api/v3/message/delete"#删除旧的服务器信息
+            params = {"msg_id":s['msg_id']}
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=params,headers=headers) as response:
+                        ret=json.loads(await response.text())
+                        print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回值
 
         sent = await bot.send(ch,cm)
         s['msg_id']= sent['msg_id']# 更新msg_id
@@ -266,6 +291,7 @@ async def update_Server():
         
     with open("./log/server.json", "w", encoding='utf-8') as f:
         json.dump(bmlist, f,indent=2,sort_keys=True, ensure_ascii=False)
+    f.close()
 
 
 # 开跑！
