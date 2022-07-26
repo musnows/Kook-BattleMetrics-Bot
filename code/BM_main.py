@@ -1,9 +1,9 @@
 # encoding: utf-8:
 import json
+from lib2to3.pgen2.token import LESSEQUAL
+from mailbox import linesep
 import aiohttp
 import time
-
-from time import strftime, gmtime
 
 from khl import Bot, Message
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
@@ -16,8 +16,10 @@ with open('./config/config.json', 'r', encoding='utf-8') as f:
 # 用读取来的 config 初始化 bot
 bot = Bot(token=config['token'])
 
-dad = "https://api.battlemetrics.com" #bm的父url
-
+BMurl = "https://api.battlemetrics.com" #bm api的父url
+kook="https://www.kookapp.cn"# kook api的父url
+Botoken = config['token']
+headers={f'Authorization': f"Bot {Botoken}"}
 
 # 向botmarket通信
 @bot.task.add_interval(minutes=30)
@@ -62,8 +64,12 @@ async def Help(msg: Message):
 @bot.command(name='BM',aliases=['bm'])
 async def check(msg: Message, name: str, game: str,max:int = 3):
     logging(msg)
+    if max>5:
+        await msg.reply("KOOK目前仅支持显示`<=5`个卡片！")
+        max=5
+    global ret
     try:
-        url = dad+f'/servers?filter[search]={name}&filter[game]={game}'
+        url = BMurl+f'/servers?filter[search]={name}&filter[game]={game}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 ret = json.loads(await response.text())
@@ -72,17 +78,25 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
         cm1 = CardMessage()
         for server in ret['data']:
             if count > max:
-                break #只显示前3个结果
-
+                break #只显示前max个结果
+            
+            #print(f"{server}  --- {type(server)}")
             emoji = ":green_circle:"
             if server['attributes']['status'] != "online":
                 emoji = ":red_circle:"
+            
+            check_map=f"{server}"#需要判断是否包含map值
+            if 'map' in check_map:
+                MAPstatus=server['attributes']['details']['map']
+            else:
+                MAPstatus="-"
+            
             c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}"))
             c.append(Module.Divider())
             c.append(
                 Module.Section(
                     Struct.Paragraph(3,
-                        Element.Text(f"**状态 **\n" +  f"{emoji}" + "   \n" + "**地图 **\n" + f"{server['attributes']['details']['map']}",
+                        Element.Text(f"**状态 **\n" +  f"{emoji}" + "   \n" + "**地图 **\n" + f"{MAPstatus}",
                                     Types.Text.KMD),
                         Element.Text(f"**服务器ip \n**" + f"{server['attributes']['ip']}" + "     \n"+"**Rank **\n" + f"#{server['attributes']['rank']}",
                                     Types.Text.KMD),
@@ -92,8 +106,8 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
             count += 1
 
         await msg.reply(cm1)
+
     except Exception as result:
-        #await msg.reply("很抱歉，发生了一些错误!\n提示:出现json错误是因为查询结果不存在\n\n报错: %s"%result)
         cm2 = CardMessage()
         c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
         c.append(Module.Divider())
@@ -109,8 +123,9 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
 @bot.command(name='py',aliases=['player'])
 async def player_check(msg: Message, player_id: str, server_id: str):
     logging(msg)
+    global ret1
     try:
-        url1 = dad+f'/players/{player_id}/servers/{server_id}'
+        url1 = BMurl+f'/players/{player_id}/servers/{server_id}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url1) as response:
                 ret1 = json.loads(await response.text())
@@ -120,7 +135,7 @@ async def player_check(msg: Message, player_id: str, server_id: str):
         h, m = divmod(m, 60)
         time_played = f"{h}时{m}分{s}秒"
 
-        url2=dad+f"/servers/{server_id}"
+        url2=BMurl+f"/servers/{server_id}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url2) as response:
                 ret2 = json.loads(await response.text())
@@ -138,6 +153,119 @@ async def player_check(msg: Message, player_id: str, server_id: str):
               Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
         cm.append(c)
         await msg.reply(cm)
+
+
+#####################################服务器实时监控############################################
+
+# 检查指定服务器并更新
+async def ServerCheck(id:str,icon:str):
+    url = f"https://api.battlemetrics.com/servers/{id}"# bm服务器id
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            ret1 = json.loads(await response.text())
+
+        print(f"\nGET: {ret1}\n")
+        # 确认状态情况（依据玩家数量进行判断）
+        emoji = ":green_circle:"
+        if ret1['data']['attributes']['players'] == 0:
+            emoji = ":red_circle:"
+
+        cm = CardMessage()
+        if icon == "": #没有图标
+            c = Card(Module.Header(f"{ret1['data']['attributes']['name']}"), Module.Context(f"id: {ret1['data']['id']}"))
+        else: #有图标
+            c = Card(
+            Module.Section(
+                Element.Text(f"{ret1['data']['attributes']['name']}",
+                                Types.Text.KMD),
+                Element.Image(
+                    src="https://s1.ax1x.com/2022/07/24/jXqRL8.png",
+                    circle=True,
+                    size='sm')))
+
+        c.append(Module.Divider())
+        c.append(
+            Module.Section(
+                Struct.Paragraph(
+                    3,
+                    Element.Text(
+                        f"**状态 **\n" + f"{emoji}" + "   \n" + "**地图 **\n" +
+                        f"{ret1['data']['attributes']['details']['map']}",
+                        Types.Text.KMD),
+                    Element.Text(
+                        f"**服务器ip \n**" + f"{ret1['data']['attributes']['ip']}" +
+                        "     \n" + "**rank **\n" +
+                        f"#{ret1['data']['attributes']['rank']}",
+                        Types.Text.KMD),
+                    Element.Text(
+                        f"**当前地区 \n**" +
+                        f"{ret1['data']['attributes']['country']}" + "    \n" +
+                        "**Players **\n"
+                        f"{ret1['data']['attributes']['players']}/{ret1['data']['attributes']['maxPlayers']}",
+                        Types.Text.KMD))))
+        cm.append(c)
+        return cm
+ 
+# 用于保存实时监控信息的字典
+ServerDict = {
+    'guild': '', 
+    'channel': '', 
+    'bm_server':'', 
+    'icon': '', 
+    'msg_id': ''
+}
+
+#保存服务器id的对应关系
+@bot.command()
+async def save(msg: Message,server:str,icon:str=""):
+    global  ServerDict
+    ServerDict['guild']=msg.ctx.guild.id
+    ServerDict['channel']=msg.ctx.channel.id
+    ServerDict['bm_server']=server
+    ServerDict['icon']=icon
+
+    with open("./log/server.json",'r',encoding='utf-8') as fr1:
+        data = json.load(fr1)
+    for s in data:
+        if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server'] == server:
+            s['icon']=icon #如果其余三个条件都吻合，即更新icon
+            await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
+
+
+    with open("./log/server.json",'a+',encoding='utf-8') as fw1:
+        json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)
+        await msg.reply(f'本狸已经记下你的游戏id啦!')
+    fw1.close()
+
+
+
+# 实时检测并更新
+@bot.task.add_interval(minutes=20)
+async def update_Server():
+    with open("./log/server.json",'r',encoding='utf-8') as fr1:
+        bmlist = json.load(fr1)
+
+    for s in bmlist:
+        print(s)
+        gu=await bot.fetch_guild(s['guild'])
+        ch=await bot.fetch_public_channel(s['channel'])
+        #BMid=s['bm_server']
+        cm =await ServerCheck(s['bm_server'],s['icon'])#获取卡片消息
+        
+        now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
+        url = kook+"/api/v3/message/delete"#删除旧的服务器信息
+        params = {"msg_id":s['msg_id']}
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=params,headers=headers) as response:
+                    ret=json.loads(await response.text())
+                    print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回值
+
+        sent = await bot.send(ch,cm)
+        s['msg_id']= sent['msg_id']# 更新msg_id
+        print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}")#打印日志
+        
+    with open("./log/server.json", "w", encoding='utf-8') as f:
+        json.dump(bmlist, f,indent=2,sort_keys=True, ensure_ascii=False)
 
 
 # 开跑！
