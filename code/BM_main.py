@@ -72,7 +72,8 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
 
     if max>5:
         await msg.reply("KOOK目前仅支持显示`<=5`个卡片！")
-        max=5
+        max=5 #修正为5个
+
     global ret
     try:
         url = BMurl+f'/servers?filter[search]={name}&filter[game]={game}'
@@ -334,8 +335,17 @@ async def Cancel_Dict(msg: Message,server:str=""):
         await msg.reply(f"本频道暂未开启任何服务器监看")
 
 
+# Minutes_task = 20
+
+# @bot.command(name="修改时间")
+# async def change_minutes(msg:Message,time:int):
+#     global Minutes_task
+#     if msg.author_id == "1961572535": #只有作者可以修改
+#         logging(msg)
+#         Minutes_task = time 
+
 # 实时检测并更新
-@bot.task.add_interval(minutes=1)
+@bot.task.add_interval(minutes=20)
 async def update_Server():
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         bmlist = json.load(fr1)
