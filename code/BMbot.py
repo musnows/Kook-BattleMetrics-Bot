@@ -66,7 +66,7 @@ async def Help(msg: Message):
 @bot.command(name='BM',aliases=['bm'])
 async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
     logging(msg)
-    if name == "err" or game == "err":
+    if name == "err":
         await msg.reply(f"函数传参错误！name:`{name}`, game:`{game}`\n")
         return # 通过缺省值检查来判断是否没有传入完整参数
 
@@ -77,6 +77,9 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
     global ret
     try:
         url = BMurl+f'/servers?filter[search]={name}&filter[game]={game}'
+        if game == "err": #如果不指定游戏，就直接搜索关键字
+            url = BMurl+f'/servers?filter[search]={name}'
+        
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 ret = json.loads(await response.text())
@@ -127,7 +130,7 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
         await msg.reply(cm2)
 
 
-# 查看玩家在某个服务器玩了多久，需要玩家id
+# 查看玩家在某个服务器玩了多久，需要玩家id和bm服务器id
 @bot.command(name='py',aliases=['player'])
 async def player_check(msg: Message, player_id: str="err", server_id: str="err"):
     logging(msg)
@@ -334,15 +337,6 @@ async def Cancel_Dict(msg: Message,server:str=""):
     if flag == 0:
         await msg.reply(f"本频道暂未开启任何服务器监看")
 
-
-# Minutes_task = 20
-
-# @bot.command(name="修改时间")
-# async def change_minutes(msg:Message,time:int):
-#     global Minutes_task
-#     if msg.author_id == "1961572535": #只有作者可以修改
-#         logging(msg)
-#         Minutes_task = time 
 
 # 实时检测并更新
 @bot.task.add_interval(minutes=20)
