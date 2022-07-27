@@ -39,6 +39,7 @@ def logging(msg: Message):
     print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
 
 
+
 # 测试bot是否上线
 @bot.command(name='hello')
 async def world(msg: Message):
@@ -63,8 +64,12 @@ async def Help(msg: Message):
 
 # 查询服务器信息
 @bot.command(name='BM',aliases=['bm'])
-async def check(msg: Message, name: str, game: str,max:int = 3):
+async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
     logging(msg)
+    if name == "err" or game == "err":
+        await msg.reply(f"函数传参错误！name:`{name}`, game:`{game}`\n")
+        return # 通过缺省值检查来判断是否没有传入完整参数
+
     if max>5:
         await msg.reply("KOOK目前仅支持显示`<=5`个卡片！")
         max=5
@@ -109,8 +114,9 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
         await msg.reply(cm1)
 
     except Exception as result:
+        #print(f"{type(result)}--{type(ret)}")
         cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"))
         c.append(Module.Divider())
         c.append(Module.Section(f"【报错】  {result}\n\n【api返回错误】 {ret}\n"))
         c.append(Module.Divider())
@@ -122,8 +128,12 @@ async def check(msg: Message, name: str, game: str,max:int = 3):
 
 # 查看玩家在某个服务器玩了多久，需要玩家id
 @bot.command(name='py',aliases=['player'])
-async def player_check(msg: Message, player_id: str, server_id: str):
+async def player_check(msg: Message, player_id: str="err", server_id: str="err"):
     logging(msg)
+    if player_id == "err" or server_id == "err":
+        await msg.reply(f"函数传参错误！player_id:`{player_id}`, server_id:`{server_id}`\n")
+        return # 通过缺省值检查来判断是否没有传入完整参数
+
     global ret1
     try:
         url1 = BMurl+f'/players/{player_id}/servers/{server_id}'
@@ -146,7 +156,7 @@ async def player_check(msg: Message, player_id: str, server_id: str):
 
     except Exception as result:
         cm = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json错误是因为查询结果不存在"))
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"))
         c.append(Module.Divider())
         c.append(Module.Section(f"【报错】  {result}\n\n【api返回错误】  {ret1['errors']}\n"))
         c.append(Module.Divider())
@@ -159,7 +169,7 @@ async def player_check(msg: Message, player_id: str, server_id: str):
 #####################################服务器实时监控############################################
 
 # 检查指定服务器并更新
-async def ServerCheck(id:str,icon:str=""):
+async def ServerCheck_ID(id:str,icon:str=""):
     url = f"https://api.battlemetrics.com/servers/{id}"# bm服务器id
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -214,13 +224,30 @@ async def ServerCheck(id:str,icon:str=""):
                         Types.Text.KMD))))
         cm.append(c)
         return cm
+       
  
 # 手动指定服务器id查询
 @bot.command(name='sv',aliases=['server'])
-async def check_server_id(msg:Message,server:str):
+async def check_server_id(msg:Message,server:str="err"):
     logging(msg)
-    cm = await ServerCheck(server)
-    await msg.reply(cm)
+    if server == "err":
+        await msg.reply(f"函数传参错误！server_id:`{server}`\n")
+        return
+
+    try:
+        cm = await ServerCheck_ID(server)
+        await msg.reply(cm)
+
+    except Exception as result:
+        cm = CardMessage()
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在\n"))
+        c.append(Module.Divider())
+        c.append(Module.Section(f"【报错】  {result}\n\n"))
+        c.append(Module.Divider())
+        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+            Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+        cm.append(c)
+        await msg.reply(cm)
 
 
 # 用于保存实时监控信息的字典
@@ -234,8 +261,12 @@ ServerDict = {
 
 #保存服务器id的对应关系
 @bot.command(name='BMlook',aliases=['监看'])
-async def save_dict(msg: Message,server:str,icon:str=""):
+async def save_dict(msg: Message,server:str="err",icon:str=""):
     logging(msg)
+    if server == "err":
+        await msg.reply(f"函数传参错误！server_id:`{server}`\n")
+        return
+
     global  ServerDict
     ServerDict['guild']=msg.ctx.guild.id
     ServerDict['channel']=msg.ctx.channel.id
@@ -263,6 +294,7 @@ async def save_dict(msg: Message,server:str,icon:str=""):
     with open("./log/server.json",'w',encoding='utf-8') as fw1:
         json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
     fw1.close()
+
 
 # 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
 @bot.command(name='td',aliases=['退订'])#td退订
@@ -303,7 +335,7 @@ async def Cancel_Dict(msg: Message,server:str=""):
 
 
 # 实时检测并更新
-@bot.task.add_interval(minutes=20)
+@bot.task.add_interval(minutes=1)
 async def update_Server():
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         bmlist = json.load(fr1)
@@ -313,7 +345,7 @@ async def update_Server():
         gu=await bot.fetch_guild(s['guild'])
         ch=await bot.fetch_public_channel(s['channel'])
         #BMid=s['bm_server']
-        cm =await ServerCheck(s['bm_server'],s['icon'])#获取卡片消息
+        cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
         
         now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
         if s['msg_id'] != "":
@@ -331,6 +363,7 @@ async def update_Server():
     with open("./log/server.json", "w", encoding='utf-8') as f:
         json.dump(bmlist, f,indent=2,sort_keys=True, ensure_ascii=False)
     f.close()
+
 
 
 # 开跑！
