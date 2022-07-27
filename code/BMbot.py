@@ -130,6 +130,62 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
         await msg.reply(cm2)
 
 
+# 通过关键字查找玩家
+@bot.command(name='spy',aliases=['查找玩家'])
+async def player_id(msg: Message, key:str='err',game:str='err'):
+    logging(msg)
+    if key == 'err':
+        await msg.reply(f"函数传参错误！player_name:`{key}`\n")
+        return # 通过缺省值检查来判断是否没有传入完整参数
+    
+    global ret1
+    try:
+        url1 = BMurl+f'/players?filter[search]={key}'
+        if game != 'err':
+            url1 = BMurl+f'/players?filter[search]={key}&filter[server][game]={game}'
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url1) as response:
+                ret1 = json.loads(await response.text())
+
+        count = 1
+        cm1 = CardMessage()
+        c = Card(Module.Header(f"玩家BM-ID查询结果如下"), Module.Context(f"若出现同名，请尝试根据创号时间定位你的bm-id"))
+        for p in ret1['data']:
+            if count > 4:
+                break #只显示前4个结果
+            
+            c.append(Module.Divider())
+            c.append(Module.Section(
+                Element.Text(f"`BM-ID` {p['attributes']['id']}\n"
+                +f"`昵称` {p['attributes']['name']}\n"
+                +f"`创号时间` {p['attributes']['createdAt']}\n",Types.Text.KMD)))
+            
+            count+=1
+
+        c.append(Module.Divider())
+        c.append(Module.Section(Element.Text("BM-api压根没有提供能定位**同名用户**的返回值，只能通过指定游戏+看创号时间的方式来曲线救国。如果你无法准确定位，可尝试前往bm官网进行查询 [bm/players](https://www.battlemetrics.com/players)",Types.Text.KMD)))
+        c.append(Module.Divider())
+        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+        cm1.append(c)
+        await msg.reply(cm1)
+
+    except Exception as result:
+        cm2 = CardMessage()
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"))
+        c.append(Module.Divider())
+        c.append(Module.Section(f"【报错】  {result}\n\n【api返回错误】 {ret1}\n"))
+        c.append(Module.Divider())
+        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+        cm2.append(c)
+        await msg.reply(cm2)
+            
+    
+
+    
+
 # 查看玩家在某个服务器玩了多久，需要玩家id和bm服务器id
 @bot.command(name='py',aliases=['player'])
 async def player_check(msg: Message, player_id: str="err", server_id: str="err"):
