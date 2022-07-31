@@ -101,7 +101,7 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
             else:
                 MAPstatus="-"
             
-            c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}"))
+            c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}, ip端口{server['attributes']['ip']}:{server['attributes']['port']}\n"))
             c.append(Module.Divider())
             c.append(
                 Module.Section(
@@ -111,7 +111,9 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
                         Element.Text(f"**服务器ip \n**" + f"{server['attributes']['ip']}" + "     \n"+"**Rank **\n" + f"#{server['attributes']['rank']}",
                                     Types.Text.KMD),
                         Element.Text(f"**当前地区 \n**" + f"{server['attributes']['country']}" + "    \n"+"**Players **\n"f"{server['attributes']['players']}/{server['attributes']['maxPlayers']}",
-                                    Types.Text.KMD))))
+                                    Types.Text.KMD))))       
+            c.append(Module.Context(Element.Text(f"在bm官网查看详细信息 [{server['id']}](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']})",Types.Text.KMD)))
+
             cm1.append(c)
             count += 1
 
