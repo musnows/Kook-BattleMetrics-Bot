@@ -33,6 +33,9 @@ async def botmarket():
 
 ######################################################################################
 
+#添加全局print命令写入log，来得知自己什么时候重启了bot
+print(f"Start at: [%s]" % time.strftime("%y-%m-%d %H:%M:%S", time.localtime()))
+
 # 在控制台打印msg内容，用作日志
 def logging(msg: Message):
     now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
