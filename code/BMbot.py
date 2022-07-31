@@ -286,7 +286,7 @@ async def ServerCheck_ID(id:str,icon:str=""):
                         Types.Text.KMD))))
 
         #steam://connect/{server['attributes']['ip']}:{server['attributes']['port']}
-        c.append(Module.Context(Element.Text(f"在bm官网查看[详细信息/加入游戏](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']})\n",Types.Text.KMD)))
+        c.append(Module.Context(Element.Text(f"在bm官网查看[详细信息](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']}) 或 [直接加入游戏](https://www.kookapp.cn/go-wild.html?url=steam://connect/{server['attributes']['ip']}:{server['attributes']['port']})",Types.Text.KMD)))
 
         cm.append(c)
         return cm
@@ -332,34 +332,55 @@ async def save_dict(msg: Message,server:str="err",icon:str=""):
     if server == "err":
         await msg.reply(f"函数传参错误！server_id:`{server}`\n")
         return
+    try:
+        global  ServerDict
+        ServerDict['guild']=msg.ctx.guild.id
+        ServerDict['channel']=msg.ctx.channel.id
+        ServerDict['bm_server']=server
+        ServerDict['icon']=icon
 
-    global  ServerDict
-    ServerDict['guild']=msg.ctx.guild.id
-    ServerDict['channel']=msg.ctx.channel.id
-    ServerDict['bm_server']=server
-    ServerDict['icon']=icon
+        flag = 0
+        with open("./log/server.json",'r',encoding='utf-8') as fr1:
+            data = json.load(fr1)
+        for s in data:
+            if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server'] == server:
+                s['icon']= icon #如果其余三个条件都吻合，即更新icon
+                flag =1
+                break
 
-    flag = 0
-    with open("./log/server.json",'r',encoding='utf-8') as fr1:
-        data = json.load(fr1)
-    for s in data:
-        if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server'] == server:
-            s['icon']= icon #如果其余三个条件都吻合，即更新icon
-            flag =1
-            break
+        if flag ==1 and icon !="":
+            await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
+        elif flag ==1 and icon =="":
+            await msg.reply(f"本频道已经订阅了服务器{server}的更新信息")
+        else:
+            ch=await bot.fetch_public_channel(ServerDict['channel'])
+            cm1 =await ServerCheck_ID(ServerDict['bm_server'],ServerDict['icon'])#获取卡片消息
+            #通过函数获取卡片消息返回值，如果服务器id正确则一切正常，如果服务器id不正确则会触发except
+            #避免出现先回复“服务器监看系统已添加” 又报错的情况。同时错误的内容也不会被存入文件
+            
+            # ↓服务器id错误时不会执行下面的↓
+            await msg.reply(f'服务器监看系统已添加！')
+            #服务器id正确，直接发送一条状态消息作为第一个msg
+            sent = await bot.send(ch,cm1)
+            ServerDict['msg_id']= sent['msg_id']#设置第一个msg_id
+            #将完整的ServerDict添加进list
+            data.append(ServerDict)
+        
+        #不管是否已存在，都需要重新执行写入（更新/添加）
+        with open("./log/server.json",'w',encoding='utf-8') as fw1:
+            json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
+        fw1.close()
 
-    if flag ==1 and icon !="":
-        await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
-    elif flag ==1 and icon =="":
-        await msg.reply(f"本频道已经订阅了服务器{server}的更新信息")
-    else:
-        data.append(ServerDict)#没有找到，就添加进去
-        await msg.reply(f'服务器监看系统已添加！')
-    
-    #不管是否已存在，都需要重新执行写入（更新/添加）
-    with open("./log/server.json",'w',encoding='utf-8') as fw1:
-        json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
-    fw1.close()
+    except Exception as result:
+        cm2 = CardMessage()
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在\n"))
+        c.append(Module.Divider())
+        c.append(Module.Section(f"【报错】  {result}\n\n您可能需要重新设置本频道的监看事件"))
+        c.append(Module.Divider())
+        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+            Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+        cm2.append(c)
+        await msg.reply(cm2)
 
 
 # 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
