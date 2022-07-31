@@ -101,7 +101,7 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
             else:
                 MAPstatus="-"
             
-            c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}, ip端口{server['attributes']['ip']}:{server['attributes']['port']}\n"))
+            c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']},  ip端口 {server['attributes']['ip']}:{server['attributes']['port']}\n"))
             c.append(Module.Divider())
             c.append(
                 Module.Section(
@@ -112,7 +112,7 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
                                     Types.Text.KMD),
                         Element.Text(f"**当前地区 \n**" + f"{server['attributes']['country']}" + "    \n"+"**Players **\n"f"{server['attributes']['players']}/{server['attributes']['maxPlayers']}",
                                     Types.Text.KMD))))       
-            c.append(Module.Context(Element.Text(f"在bm官网查看详细信息 [{server['id']}](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']})",Types.Text.KMD)))
+            c.append(Module.Context(Element.Text(f"在bm官网查看详细信息/加入游戏 [{server['id']}](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']})",Types.Text.KMD)))
 
             cm1.append(c)
             count += 1
@@ -166,7 +166,7 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
             count+=1
 
         c.append(Module.Divider())
-        c.append(Module.Section(Element.Text("BM-api压根没有提供能定位**同名用户**的返回值，只能通过指定游戏+看创号时间的方式来曲线救国。如果你无法准确定位，可尝试前往bm官网进行查询 [bm/players](https://www.battlemetrics.com/players)",Types.Text.KMD)))
+        c.append(Module.Section(Element.Text("BM-api没有提供能定位**同名用户**的返回值，只能通过指定游戏+看创号时间的方式来曲线救国。如果你无法准确定位，可尝试前往bm官网进行查询 [bm/players](https://www.battlemetrics.com/players)",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
               Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
@@ -284,6 +284,10 @@ async def ServerCheck_ID(id:str,icon:str=""):
                         "**Players **\n"
                         f"{server['attributes']['players']}/{server['attributes']['maxPlayers']}",
                         Types.Text.KMD))))
+
+        #steam://connect/{server['attributes']['ip']}:{server['attributes']['port']}
+        c.append(Module.Context(Element.Text(f"在bm官网查看[详细信息/加入游戏](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']})\n",Types.Text.KMD)))
+
         cm.append(c)
         return cm
        
