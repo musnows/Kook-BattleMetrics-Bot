@@ -4,3 +4,4 @@ bot.log
 server.json
 
 code/__pycache__
+main.py
