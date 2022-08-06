@@ -1,8 +1,5 @@
 # encoding: utf-8:
 import json
-from lib2to3.pgen2.token import LESSEQUAL
-from mailbox import linesep
-from sys import flags
 import aiohttp
 import time
 
@@ -23,7 +20,7 @@ Botoken = config['token']
 headers={f'Authorization': f"Bot {Botoken}"}
 
 # 向botmarket通信
-@bot.task.add_interval(minutes=30)
+@bot.task.add_interval(minutes=29)
 async def botmarket():
     api ="http://bot.gekj.net/api/v1/online.bot"
     headers = {'uuid':'fbb98686-91fe-46b5-be2c-cf146cccc822'}
@@ -33,12 +30,15 @@ async def botmarket():
 
 ######################################################################################
 
+def GetTime():
+    return time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
+
 #添加全局print命令写入log，来得知自己什么时候重启了bot
-print(f"Start at: [%s]" % time.strftime("%y-%m-%d %H:%M:%S", time.localtime()))
+print(f"Start at: [%s]" % GetTime())
 
 # 在控制台打印msg内容，用作日志
 def logging(msg: Message):
-    now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
+    now_time = GetTime()
     print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
 
 
@@ -240,7 +240,7 @@ async def ServerCheck_ID(id:str,icon:str=""):
         async with session.get(url) as response:
             ret1 = json.loads(await response.text())
 
-        print(f"\nGET: {ret1}\n")
+        #print(f"\nGET: {ret1}\n") #取消打印，只有出现问题的时候再打印
         server = ret1['data']
         # 确认状态情况
         emoji = ":green_circle:"
@@ -427,32 +427,42 @@ async def Cancel_Dict(msg: Message,server:str=""):
 # 实时检测并更新
 @bot.task.add_interval(minutes=20)
 async def update_Server():
-    with open("./log/server.json",'r',encoding='utf-8') as fr1:
-        bmlist = json.load(fr1)
+    try:
+        with open("./log/server.json",'r',encoding='utf-8') as fr1:
+            bmlist = json.load(fr1)
 
-    for s in bmlist:
-        print(s)
-        gu=await bot.fetch_guild(s['guild'])
-        ch=await bot.fetch_public_channel(s['channel'])
-        #BMid=s['bm_server']
-        cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
-        
-        now_time = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
-        if s['msg_id'] != "":
-            url = kook+"/api/v3/message/delete"#删除旧的服务器信息
-            params = {"msg_id":s['msg_id']}
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, data=params,headers=headers) as response:
-                        ret=json.loads(await response.text())
-                        print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回值
+        for s in bmlist:
+            print("Updating: %s"%s)
+            gu=await bot.fetch_guild(s['guild'])
+            ch=await bot.fetch_public_channel(s['channel'])
+            #BMid=s['bm_server']
+            cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
+            
+            now_time = GetTime()
+            if s['msg_id'] != "":
+                url = kook+"/api/v3/message/delete"#删除旧的服务器信息
+                params = {"msg_id":s['msg_id']}
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=params,headers=headers) as response:
+                            ret=json.loads(await response.text())
+                            print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回值
 
-        sent = await bot.send(ch,cm)
-        s['msg_id']= sent['msg_id']# 更新msg_id
-        print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}")#打印日志
-        
-    with open("./log/server.json", "w", encoding='utf-8') as f:
-        json.dump(bmlist, f,indent=2,sort_keys=True, ensure_ascii=False)
-    f.close()
+            sent = await bot.send(ch,cm)
+            s['msg_id']= sent['msg_id']# 更新msg_id
+            print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}\n")#打印日志
+            
+        with open("./log/server.json", "w", encoding='utf-8') as f:
+            json.dump(bmlist, f,indent=2,sort_keys=True, ensure_ascii=False)
+        f.close()
+
+    except Exception as result:
+        err_str=f"ERR! [{GetTime()}] update_server {result}"
+        print(err_str)
+        #发送错误信息到指定频道
+        debug_channel= await bot.fetch_public_channel("7118977539286297")
+        await bot.send(debug_channel,err_str)
+
+
 
 
 
