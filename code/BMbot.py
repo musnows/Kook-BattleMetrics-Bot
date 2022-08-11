@@ -18,6 +18,7 @@ BMurl = "https://api.battlemetrics.com" #bm api的父url
 kook="https://www.kookapp.cn"# kook api的父url
 Botoken = config['token']
 headers={f'Authorization': f"Bot {Botoken}"}
+Debug_CL="6248953582412867"
 
 # 向botmarket通信
 @bot.task.add_interval(minutes=29)
@@ -459,7 +460,7 @@ async def update_Server():
         err_str=f"ERR! [{GetTime()}] update_server {result}"
         print(err_str)
         #发送错误信息到指定频道
-        debug_channel= await bot.fetch_public_channel("7118977539286297")
+        debug_channel= await bot.fetch_public_channel(Debug_CL)
         await bot.send(debug_channel,err_str)
 
 
