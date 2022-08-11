@@ -351,7 +351,8 @@ async def save_dict(msg: Message,server:str="err",icon:str=""):
                 s['icon']= icon #如果其余三个条件都吻合，即更新icon
                 flag =1
                 break
-
+        
+        print(f"/BMlook flag={flag} [1-Modify,0-Add]")#打印日志来记录是否进行了修改
         if flag ==1 and icon !="":
             await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
         elif flag ==1 and icon =="":
@@ -457,7 +458,7 @@ async def update_Server():
         f.close()
 
     except Exception as result:
-        err_str=f"ERR! [{GetTime()}] update_server {result}"
+        err_str=f"ERR! [{GetTime()}] update_server - {result}"
         print(err_str)
         #发送错误信息到指定频道
         debug_channel= await bot.fetch_public_channel(Debug_CL)
