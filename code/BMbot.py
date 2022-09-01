@@ -2,6 +2,7 @@
 import json
 import aiohttp
 import time
+import traceback
 
 from khl import Bot, Message,PrivateMessage
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
@@ -34,8 +35,6 @@ async def botmarket():
 def GetTime():
     return time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
 
-#添加全局print命令写入log，来得知自己什么时候重启了bot
-print(f"Start at: [%s]" % GetTime())
 
 # 在控制台打印msg内容，用作日志
 def logging(msg: Message):
@@ -60,7 +59,15 @@ async def Help(msg: Message):
     c3 = Card(Module.Header('目前bm小助手支持的指令如下！'),Module.Context(Element.Text("由MOAR#7134开发，开源代码见 [Github](https://github.com/Aewait/Kook-BattleMetrics-Bot)",Types.Text.KMD)))
     c3.append(Module.Divider())
     #实现卡片的markdown文本
-    c3.append(Module.Section(Element.Text("`/hi` 查看bm小助手是否在线\n\n服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n```\n使用示例: /BM 萌新 hll 4\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n```\n\n`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n`/sv 服务器id` 查询指定服务器的相关信息;\n`/监看 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白;\n`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看",Types.Text.KMD)))
+    text ="`/hi` 查看bm小助手是否在线\n\n"
+    text+="服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n"
+    text+="```\n使用示例: /BM 萌新 hll 4\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n```\n\n"
+    text+="`/spy 玩家昵称` 通过昵称检索玩家（暂无法解决同名问题）\n"
+    text+="`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n"
+    text+="`/sv 服务器id` 查询指定服务器的相关信息;\n"
+    text+="`/监看 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白;\n"
+    text+="`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看"
+    c3.append(Module.Section(Element.Text(text,Types.Text.KMD)))
     c3.append(Module.Divider())
     c3.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
               Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
@@ -237,7 +244,7 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
 #####################################服务器实时监控############################################
 
 # 检查指定服务器并更新
-async def ServerCheck_ID(id:str,icon:str=""):
+async def ServerCheck_ID(id:str,icon:str="err"):
     url = f"https://api.battlemetrics.com/servers/{id}"# bm服务器id
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -258,7 +265,7 @@ async def ServerCheck_ID(id:str,icon:str=""):
             MAPstatus="-"
 
         cm = CardMessage()
-        if icon == "": #没有图标
+        if icon == "err": #没有图标
             c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}"))
         else: #有图标
             c = Card(
@@ -266,7 +273,7 @@ async def ServerCheck_ID(id:str,icon:str=""):
                 Element.Text(f"{server['attributes']['name']}",
                                 Types.Text.KMD),
                 Element.Image(
-                    src="https://s1.ax1x.com/2022/07/24/jXqRL8.png",
+                    src=icon,
                     circle=True,
                     size='sm')))
 
@@ -322,28 +329,37 @@ async def check_server_id(msg:Message,server:str="err"):
         await msg.reply(cm)
 
 
-# 用于保存实时监控信息的字典
-ServerDict = {
-    'guild': '', 
-    'channel': '', 
-    'bm_server':'', 
-    'icon': '', 
-    'msg_id': ''
-}
+# # 用于保存实时监控信息的字典
+# ServerDict = {
+#     'guild': '', 
+#     'channel': '', 
+#     'bm_server':'', 
+#     'icon': '', 
+#     'msg_id': ''
+# }
 
 #保存服务器id的对应关系
 @bot.command(name='BMlook',aliases=['监看'])
-async def save_dict(msg: Message,server:str="err",icon:str=""):
+async def save_dict(msg: Message,server:str="err",icon:str="err"):
     logging(msg)
     if server == "err":
         await msg.reply(f"函数传参错误！server_id:`{server}`\n")
         return
     try:
-        global  ServerDict
-        ServerDict['guild']=msg.ctx.guild.id
-        ServerDict['channel']=msg.ctx.channel.id
-        ServerDict['bm_server']=server
-        ServerDict['icon']=icon
+        ServerDict = {
+            'guild': msg.ctx.guild.id, 
+            'channel': msg.ctx.channel.id, 
+            'bm_server':server, 
+            'icon': icon, 
+            'msg_id': ''
+        }
+
+        if icon !="err" and '](' in icon:
+            x1 = icon.find('](')
+            x2 = icon.find(')',x1+2)
+            x3 = icon[x1+2:x2]
+            print('[icon] ',x3)#日后用于排错
+            ServerDict['icon']=x3
 
         flag = 0
         with open("./log/server.json",'r',encoding='utf-8') as fr1:
@@ -354,10 +370,10 @@ async def save_dict(msg: Message,server:str="err",icon:str=""):
                 flag =1
                 break
         
-        print(f"/BMlook flag={flag} [1-Modify,0-Add]")#打印日志来记录是否进行了修改
-        if flag ==1 and icon !="":
+        print(f"[BMlook] flag={flag} [1-Modify,0-Add]")#打印日志来记录是否进行了修改
+        if flag ==1 and icon !="err":
             await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
-        elif flag ==1 and icon =="":
+        elif flag ==1 and icon =="err":
             await msg.reply(f"本频道已经订阅了服务器{server}的更新信息")
         else:
             ch=await bot.fetch_public_channel(ServerDict['channel'])
@@ -379,13 +395,14 @@ async def save_dict(msg: Message,server:str="err",icon:str=""):
         fw1.close()
 
     except Exception as result:
+        err_str=f"ERR! [{GetTime()}] select_skin_inform\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
         cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在\n"))
-        c.append(Module.Divider())
-        c.append(Module.Section(f"【报错】  {result}\n\n您可能需要重新设置本频道的监看事件"))
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"),Module.Divider())
+        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
         cm2.append(c)
         await msg.reply(cm2)
 
@@ -394,8 +411,8 @@ async def save_dict(msg: Message,server:str="err",icon:str=""):
 @bot.command(name='td',aliases=['退订'])#td退订
 async def Cancel_Dict(msg: Message,server:str=""):
     logging(msg)
-    global  ServerDict
-    emptyList = list() #创建空list
+    #创建空list
+    emptyList = list() 
     with open("./log/server.json",'r',encoding='utf-8') as fr1:
         data = json.load(fr1)
     flag=0 #用于判断
@@ -410,14 +427,8 @@ async def Cancel_Dict(msg: Message,server:str=""):
             print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM: ALL")
             await msg.reply(f"已成功取消本频道下所有监看")
         else: # 不吻合，进行插入
-            #先自己创建一个元素
-            ServerDict['guild']=s['guild']
-            ServerDict['channel']=s['channel']
-            ServerDict['bm_server']=s['bm_server']
-            ServerDict['icon']=s['icon']
-            ServerDict['msg_id']=s['msg_id']
             #插入进空list
-            emptyList.append(ServerDict)
+            emptyList.append(s)
 
     #最后重新执行写入
     with open("./log/server.json",'w',encoding='utf-8') as fw1:
@@ -460,15 +471,15 @@ async def update_Server():
         f.close()
 
     except Exception as result:
-        err_str=f"ERR! [{GetTime()}] update_server - {result}"
+        err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         #发送错误信息到指定频道
         debug_channel= await bot.fetch_public_channel(Debug_CL)
         await bot.send(debug_channel,err_str)
 
 
-
-
+#添加全局print命令写入log，来得知自己什么时候重启了bot
+print(f"Start at: [%s]" % GetTime())
 
 # 开跑！
 bot.run()
