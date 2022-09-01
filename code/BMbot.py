@@ -133,14 +133,14 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
         await msg.reply(cm1)
 
     except Exception as result:
-        #print(f"{type(result)}--{type(ret)}")
+        err_str=f"ERR! [{GetTime()}] bm\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
         cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"))
-        c.append(Module.Divider())
-        c.append(Module.Section(f"【报错】  {result}\n\n【api返回错误】 {ret}\n"))
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
+        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
         cm2.append(c)
         await msg.reply(cm2)
 
@@ -187,13 +187,14 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
         await msg.reply(cm1)
 
     except Exception as result:
+        err_str=f"ERR! [{GetTime()}] spy\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
         cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"))
-        c.append(Module.Divider())
-        c.append(Module.Section(f"【报错】  {result}\n\n【api返回错误】 {ret1}\n"))
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
+        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
+            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
         cm2.append(c)
         await msg.reply(cm2)
             
@@ -230,18 +231,22 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
         await msg.reply(f"你已经在服务器: `{server_name}`\n玩了{time_played}，真不错！")
 
     except Exception as result:
-        cm = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"))
-        c.append(Module.Divider())
-        c.append(Module.Section(f"【报错】  {result}\n\n【api返回错误】  {ret1['errors']}\n"))
+        err_str=f"ERR! [{GetTime()}] py\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
+        cm2 = CardMessage()
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
+        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-              Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
-        cm.append(c)
-        await msg.reply(cm)
+            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
+        cm2.append(c)
+        await msg.reply(cm2)
 
 
 #####################################服务器实时监控############################################
+
+with open("./log/server.json",'r',encoding='utf-8') as fr1:
+    BmList = json.load(fr1)
 
 # 检查指定服务器并更新
 async def ServerCheck_ID(id:str,icon:str="err"):
@@ -318,16 +323,16 @@ async def check_server_id(msg:Message,server:str="err"):
         await msg.reply(cm)
 
     except Exception as result:
-        cm = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在\n"))
-        c.append(Module.Divider())
-        c.append(Module.Section(f"【报错】  {result}\n\n"))
+        err_str=f"ERR! [{GetTime()}] sv\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
+        cm2 = CardMessage()
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
+        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/Lsv21o', Types.Click.LINK)))
-        cm.append(c)
-        await msg.reply(cm)
-
+            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
+        cm2.append(c)
+        await msg.reply(cm2)
 
 # # 用于保存实时监控信息的字典
 # ServerDict = {
@@ -358,21 +363,19 @@ async def save_dict(msg: Message,server:str="err",icon:str="err"):
             x1 = icon.find('](')
             x2 = icon.find(')',x1+2)
             x3 = icon[x1+2:x2]
-            print('[icon] ',x3)#日后用于排错
+            print('[icon]',x3)#日后用于排错
             ServerDict['icon']=x3
 
         flag = 0
-        with open("./log/server.json",'r',encoding='utf-8') as fr1:
-            data = json.load(fr1)
-        for s in data:
+        global BmList
+        for s in BmList:
             if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server'] == server:
-                s['icon']= icon #如果其余三个条件都吻合，即更新icon
+                s['icon']= ServerDict['icon'] #如果其余三个条件都吻合，即更新icon
                 flag =1
                 break
         
-        print(f"[BMlook] flag={flag} [1-Modify,0-Add]")#打印日志来记录是否进行了修改
         if flag ==1 and icon !="err":
-            await msg.reply(f"服务器图标已更新为[{s['icon']}]({s['icon']})")
+            await msg.reply(f"服务器图标已更新为 {s['icon']}")
         elif flag ==1 and icon =="err":
             await msg.reply(f"本频道已经订阅了服务器{server}的更新信息")
         else:
@@ -387,18 +390,19 @@ async def save_dict(msg: Message,server:str="err",icon:str="err"):
             sent = await bot.send(ch,cm1)
             ServerDict['msg_id']= sent['msg_id']#设置第一个msg_id
             #将完整的ServerDict添加进list
-            data.append(ServerDict)
+            BmList.append(ServerDict)
         
         #不管是否已存在，都需要重新执行写入（更新/添加）
         with open("./log/server.json",'w',encoding='utf-8') as fw1:
-            json.dump(data,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
+            json.dump(BmList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
         fw1.close()
-
+        #打印日志来记录是否进行了修改
+        print(f"[BMlook] flag={flag} [1-Modify,0-Add]")
     except Exception as result:
-        err_str=f"ERR! [{GetTime()}] select_skin_inform\n```\n{traceback.format_exc()}\n```"
+        err_str=f"ERR! [{GetTime()}] BMlook\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"),Module.Divider())
+        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
         c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
         c.append(Module.Divider())
         c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
@@ -411,42 +415,46 @@ async def save_dict(msg: Message,server:str="err",icon:str="err"):
 @bot.command(name='td',aliases=['退订'])#td退订
 async def Cancel_Dict(msg: Message,server:str=""):
     logging(msg)
-    #创建空list
-    emptyList = list() 
-    with open("./log/server.json",'r',encoding='utf-8') as fr1:
-        data = json.load(fr1)
-    flag=0 #用于判断
-    for s in data:
-        #如果吻合，则执行删除操作
-        if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server']==server:
-            flag=1
-            print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
-            await msg.reply(f"已成功取消{server}的监看")
-        elif s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and server=="":
-            flag=1
-            print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM: ALL")
-            await msg.reply(f"已成功取消本频道下所有监看")
-        else: # 不吻合，进行插入
-            #插入进空list
-            emptyList.append(s)
+    try:
+        global BmList
+        #创建空list
+        emptyList = list() 
+        flag=0 #用于判断
+        for s in BmList:
+            #如果吻合，则执行删除操作
+            if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server']==server:
+                flag=1
+                print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
+                await msg.reply(f"已成功取消{server}的监看")
+            elif s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and server=="":
+                flag=1
+                print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM: ALL")
+                await msg.reply(f"已成功取消本频道下所有监看")
+            else: # 不吻合，进行插入
+                #插入进空list
+                emptyList.append(s)
 
-    #最后重新执行写入
-    with open("./log/server.json",'w',encoding='utf-8') as fw1:
-        json.dump(emptyList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
-    fw1.close()
+        BmList=emptyList
+        #最后重新执行写入
+        with open("./log/server.json",'w',encoding='utf-8') as fw1:
+            json.dump(BmList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
+        fw1.close()
 
-    if flag == 0:
-        await msg.reply(f"本频道暂未开启任何服务器监看")
-
+        if flag == 0:
+            await msg.reply(f"本频道暂未开启任何服务器监看")
+    except Exception as result:
+        err_str=f"ERR! [{GetTime()}] td\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
+        #发送错误信息到指定频道
+        debug_channel= await bot.fetch_public_channel(Debug_CL)
+        await bot.send(debug_channel,err_str)
 
 # 实时检测并更新
 @bot.task.add_interval(minutes=20)
 async def update_Server():
     try:
-        with open("./log/server.json",'r',encoding='utf-8') as fr1:
-            bmlist = json.load(fr1)
-
-        for s in bmlist:
+        global BmList
+        for s in BmList:
             print("Updating: %s"%s)
             gu=await bot.fetch_guild(s['guild'])
             ch=await bot.fetch_public_channel(s['channel'])
@@ -467,7 +475,7 @@ async def update_Server():
             print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}\n")#打印日志
             
         with open("./log/server.json", "w", encoding='utf-8') as f:
-            json.dump(bmlist, f,indent=2,sort_keys=True, ensure_ascii=False)
+            json.dump(BmList, f,indent=2,sort_keys=True, ensure_ascii=False)
         f.close()
 
     except Exception as result:
