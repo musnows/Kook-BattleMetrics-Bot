@@ -3,7 +3,7 @@ import json
 import aiohttp
 import time
 
-from khl import Bot, Message
+from khl import Bot, Message,PrivateMessage
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
 
 
@@ -40,12 +40,14 @@ print(f"Start at: [%s]" % GetTime())
 # 在控制台打印msg内容，用作日志
 def logging(msg: Message):
     now_time = GetTime()
-    print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
-
+    if isinstance(msg,PrivateMessage):
+        print(f"[{now_time}] PrivateMessage - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
+    else:
+        print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
 
 
 # 测试bot是否上线
-@bot.command(name='hello')
+@bot.command(name='hi',aliases=['HI'])
 async def world(msg: Message):
     logging(msg)
     await msg.reply('world!')
@@ -55,10 +57,10 @@ async def world(msg: Message):
 async def Help(msg: Message):
     logging(msg)
     cm = CardMessage()
-    c3 = Card(Module.Header('目前bm小助手支持的指令如下！'))
+    c3 = Card(Module.Header('目前bm小助手支持的指令如下！'),Module.Context(Element.Text("由MOAR#7134开发，开源代码见 [Github](https://github.com/Aewait/Kook-BattleMetrics-Bot)",Types.Text.KMD)))
     c3.append(Module.Divider())
     #实现卡片的markdown文本
-    c3.append(Module.Section(Element.Text('服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n使用示例:`/BM 萌新 hll 4`\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n\n`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长\n`/sv 服务器id` 查询指定服务器的相关信息\n`/监看 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率128*128，且不要在图标周围留太多空白\n`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看',Types.Text.KMD)))
+    c3.append(Module.Section(Element.Text("服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n```\n使用示例: /BM 萌新 hll 4\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n```\n\n`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n`/sv 服务器id` 查询指定服务器的相关信息;\n`/监看 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白;\n`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看",Types.Text.KMD)))
     c3.append(Module.Divider())
     c3.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
               Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
