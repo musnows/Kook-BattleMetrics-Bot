@@ -270,7 +270,7 @@ async def ServerCheck_ID(id:str,icon:str="err"):
             MAPstatus="-"
 
         cm = CardMessage()
-        if icon == "err": #没有图标
+        if icon == "err" or icon == "": #没有图标
             c = Card(Module.Header(f"{server['attributes']['name']}"), Module.Context(f"id: {server['id']}"))
         else: #有图标
             c = Card(
@@ -453,6 +453,7 @@ async def Cancel_Dict(msg: Message,server:str=""):
 @bot.task.add_interval(minutes=20)
 async def update_Server():
     try:
+        print("[BOT.TASK] update_Server begin!")
         global BmList
         for s in BmList:
             print("Updating: %s"%s)
@@ -477,7 +478,7 @@ async def update_Server():
         with open("./log/server.json", "w", encoding='utf-8') as f:
             json.dump(BmList, f,indent=2,sort_keys=True, ensure_ascii=False)
         f.close()
-
+        print("[BOT.TASK] update_Server finished!")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
         print(err_str)
