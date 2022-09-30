@@ -1,4 +1,5 @@
 # encoding: utf-8:
+from copy import deepcopy
 import json
 import aiohttp
 import time
@@ -455,26 +456,38 @@ async def update_Server():
     try:
         print("[BOT.TASK] update_Server begin!")
         global BmList
-        for s in BmList:
-            print("Updating: %s"%s)
-            gu=await bot.fetch_guild(s['guild'])
-            ch=await bot.fetch_public_channel(s['channel'])
-            #BMid=s['bm_server']
-            cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
-            
-            now_time = GetTime()
-            if s['msg_id'] != "":
-                url = kook+"/api/v3/message/delete"#删除旧的服务器信息
-                params = {"msg_id":s['msg_id']}
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, data=params,headers=headers) as response:
+        TempList = deepcopy(BmList)
+        for s in TempList:
+            try:
+                print("Updating: %s"%s)
+                gu=await bot.fetch_guild(s['guild'])
+                ch=await bot.fetch_public_channel(s['channel'])
+                #BMid=s['bm_server']
+                cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
+                
+                now_time = GetTime()
+                if s['msg_id'] != "":
+                    url = kook+"/api/v3/message/delete"#删除旧的服务器信息
+                    params = {"msg_id":s['msg_id']}
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(url, data=params,headers=headers) as response:
                             ret=json.loads(await response.text())
-                            print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回值
+                            print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回
 
-            sent = await bot.send(ch,cm)
-            s['msg_id']= sent['msg_id']# 更新msg_id
-            print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}\n")#打印日志
-            
+                sent = await bot.send(ch,cm)
+                s['msg_id']= sent['msg_id']# 更新msg_id
+                print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}\n")#打印日志
+                
+            except Exception as result:
+                err_str=f"ERR! [{GetTime()}] updating {s['msg_id']}\n```\n{traceback.format_exc()}\n```"
+                TempList.pop(s)
+                err_str+=f"TempList pop[{s}]"
+                #发送错误信息到指定频道
+                print(err_str)
+                debug_channel= await bot.fetch_public_channel(Debug_CL)
+                await bot.send(debug_channel,err_str)
+        
+        BmList = TempList
         with open("./log/server.json", "w", encoding='utf-8') as f:
             json.dump(BmList, f,indent=2,sort_keys=True, ensure_ascii=False)
         f.close()
