@@ -4,6 +4,7 @@ import json
 import aiohttp
 import time
 import traceback
+import os
 
 from typing import Union
 from copy import deepcopy
@@ -23,6 +24,7 @@ kook="https://www.kookapp.cn"# kook api的父url
 Botoken = config['token']
 headers={f'Authorization': f"Bot {Botoken}"}
 Debug_CL="6248953582412867"
+debug_channel = None
 
 # 向botmarket通信
 @bot.task.add_interval(minutes=29)
@@ -47,6 +49,15 @@ def logging(msg: Message):
     else:
         print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
 
+def log_err_cm(err_str:str):
+    cm2 = CardMessage()
+    c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
+    c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
+    c.append(Module.Divider())
+    c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+        Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
+    cm2.append(c)
+    return cm2
 
 # 测试bot是否上线
 @bot.command(name='hi',aliases=['HI'])
@@ -58,24 +69,31 @@ async def world(msg: Message):
 @bot.command(name='BMhelp',aliases=['bmhelp'])
 async def Help(msg: Message):
     logging(msg)
-    cm = CardMessage()
-    c3 = Card(Module.Header('目前bm小助手支持的指令如下！'),Module.Context(Element.Text("由MOAR#7134开发，开源代码见 [Github](https://github.com/Aewait/Kook-BattleMetrics-Bot)",Types.Text.KMD)))
-    c3.append(Module.Divider())
-    #实现卡片的markdown文本
-    text ="`/hi` 查看bm小助手是否在线\n\n"
-    text+="服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n"
-    text+="```\n使用示例: /BM 萌新 hll 4\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n```\n\n"
-    text+="`/spy 玩家昵称` 通过昵称检索玩家（暂无法解决同名问题）\n"
-    text+="`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n"
-    text+="`/sv 服务器id` 查询指定服务器的相关信息;\n"
-    text+="`/bmlk 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白 [图标url获取教程](https://s1.ax1x.com/2022/09/30/xu8got.png)\n"
-    text+="`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看"
-    c3.append(Module.Section(Element.Text(text,Types.Text.KMD)))
-    c3.append(Module.Divider())
-    c3.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-              Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-    cm.append(c3)
-    await msg.reply(cm)
+    try:
+        cm = CardMessage()
+        c3 = Card(Module.Header('目前bm小助手支持的指令如下！'),Module.Context(Element.Text("由MOAR#7134开发，开源代码见 [Github](https://github.com/Aewait/Kook-BattleMetrics-Bot)",Types.Text.KMD)))
+        c3.append(Module.Divider())
+        #实现卡片的markdown文本
+        text ="`/hi` 查看bm小助手是否在线\n\n"
+        text+="服务器查询指令为`/BM`or`/bm`\n参数: 服务器名，游戏名，显示前几个搜索结果\n"
+        text+="```\n使用示例: /BM 萌新 hll 4\n显示游戏`hll`服务器中名称包含`萌新`的前4个结果\n```\n\n"
+        text+="`/spy 玩家昵称` 通过昵称检索玩家（暂无法解决同名问题）\n"
+        text+="`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n"
+        text+="`/sv 服务器id` 查询指定服务器的相关信息;\n"
+        text+="`/bmlk 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128` 且不要在图标周围留太多空白 [图标url获取教程](https://s1.ax1x.com/2022/09/30/xu8got.png)\n"
+        text+="`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看"
+        c3.append(Module.Section(Element.Text(text,Types.Text.KMD)))
+        c3.append(Module.Divider())
+        c3.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
+                Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
+        cm.append(c3)
+        await msg.reply(cm)
+    except Exception as result:
+        err_str=f"ERR! [{GetTime()}] bm\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
 
 
 # 查询服务器信息
@@ -138,14 +156,9 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] bm\n```\n{traceback.format_exc()}\n```"
         print(err_str)
-        cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
-        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
-        c.append(Module.Divider())
-        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-        cm2.append(c)
-        await msg.reply(cm2)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
 
 
 # 通过关键字查找玩家
@@ -192,14 +205,9 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] spy\n```\n{traceback.format_exc()}\n```"
         print(err_str)
-        cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
-        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
-        c.append(Module.Divider())
-        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-        cm2.append(c)
-        await msg.reply(cm2)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
             
     
 # 查看玩家在某个服务器玩了多久，需要玩家id和bm服务器id
@@ -233,14 +241,9 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] py\n```\n{traceback.format_exc()}\n```"
         print(err_str)
-        cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
-        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
-        c.append(Module.Divider())
-        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-        cm2.append(c)
-        await msg.reply(cm2)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
 
 
 #####################################服务器实时监控############################################
@@ -330,14 +333,9 @@ async def check_server_id(msg:Message,server:str="err"):
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] sv:{server}\n```\n{traceback.format_exc()}\n```"
         print(err_str)
-        cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
-        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
-        c.append(Module.Divider())
-        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-        cm2.append(c)
-        await msg.reply(cm2)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
 
 
 #保存服务器id的对应关系
@@ -380,7 +378,7 @@ async def Add_bmlk(msg: Message,server:str="err",icon:str="err",*args):
         elif flag ==1 and icon =="err":
             await msg.reply(f"本频道已经订阅了服务器{server}的更新信息")
         else:
-            ch=await bot.fetch_public_channel(ServerDict['channel'])
+            ch=await bot.client.fetch_public_channel(ServerDict['channel'])
             cm1 =await ServerCheck_ID(ServerDict['bm_server'],ServerDict['icon'])#获取卡片消息
             #通过函数获取卡片消息返回值，如果服务器id正确则一切正常，如果服务器id不正确则会触发except
             #避免出现先回复“服务器监看系统已添加” 又报错的情况。同时错误的内容也不会被存入文件
@@ -388,7 +386,7 @@ async def Add_bmlk(msg: Message,server:str="err",icon:str="err",*args):
             # ↓服务器id错误时不会执行下面的↓
             await msg.reply(f'服务器监看系统已添加！')
             #服务器id正确，直接发送一条状态消息作为第一个msg
-            sent = await bot.send(ch,cm1)
+            sent = await bot.client.send(ch,cm1)
             ServerDict['msg_id']= sent['msg_id']#设置第一个msg_id
             #将完整的ServerDict添加进list
             key_uuid = get_uuid()
@@ -404,14 +402,9 @@ async def Add_bmlk(msg: Message,server:str="err",icon:str="err",*args):
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] BMlook\n```\n{traceback.format_exc()}\n```"
         print(err_str)
-        cm2 = CardMessage()
-        c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
-        c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
-        c.append(Module.Divider())
-        c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-            Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-        cm2.append(c)
-        await msg.reply(cm2)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
 
 
 # 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
@@ -454,22 +447,23 @@ async def Cancel_bmlk(msg: Message,server:str="",*args):
         err_str=f"ERR! [{GetTime()}] td\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         #发送错误信息到指定频道
-        debug_channel= await bot.fetch_public_channel(Debug_CL)
-        await bot.send(debug_channel,err_str)
+        #debug_channel= await bot.client.fetch_public_channel(Debug_CL)
+        cm = log_err_cm(err_str)
+        await msg.reply(cm)
+        await bot.client.send(debug_channel,err_str)
 
 # 实时检测并更新
 @bot.task.add_interval(minutes=20)
 async def update_Server_bmlk():
     print(f"[BOT.TASK] update_Server begin [{GetTime()}]")
-    debug_channel = await bot.fetch_public_channel(Debug_CL)
     try:
         global BmDict
         TempDict = deepcopy(BmDict)
         for uid,s in BmDict['data'].items():
             try:
                 print("[BOT.TASK] Updating: %s"%s)
-                gu=await bot.fetch_guild(s['guild'])
-                ch=await bot.fetch_public_channel(s['channel'])
+                gu=await bot.client.fetch_guild(s['guild'])
+                ch=await bot.client.fetch_public_channel(s['channel'])
                 #BMid=s['bm_server']
                 cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
                 
@@ -481,7 +475,7 @@ async def update_Server_bmlk():
                             ret=json.loads(await response.text())
                             print(f"[BOT.TASK] Delete:{ret['message']}")#打印删除信息的返回
 
-                sent = await bot.send(ch,cm)
+                sent = await bot.client.send(ch,cm)
                 TempDict['data'][uid]['msg_id'] = sent['msg_id']# 更新msg_id
                 print(f"[BOT.TASK] SENT_MSG_ID:{sent['msg_id']}")#打印日志
 
@@ -493,7 +487,7 @@ async def update_Server_bmlk():
                     err_str+=f"\nTempDict del:{s}\n"
                 #发送错误信息到指定频道
                 print(err_str)
-                await bot.send(debug_channel,err_str)
+                await bot.client.send(debug_channel,err_str)
         
         BmDict = TempDict
         with open("./log/server.json", "w", encoding='utf-8') as f:
@@ -503,8 +497,20 @@ async def update_Server_bmlk():
         err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         #发送错误信息到指定频道
-        await bot.send(debug_channel,err_str)
+        await bot.client.send(debug_channel,err_str)
 
+
+
+@bot.task.add_date()
+async def fetch_channel():
+    try:
+        global debug_channel
+        debug_channel = await bot.client.fetch_public_channel(Debug_CL)
+        print(f"[BOT.TASK] fetch_public_channel(Debug_CL) success")
+    except:
+        err_str=f"ERR! [{GetTime()}] fetch_channel\n```\n{traceback.format_exc()}\n```"
+        print(err_str)
+        os._exit(-1)
 
 #添加全局print命令写入log，来得知自己什么时候重启了bot
 print(f"Start at: [%s]" % GetTime())
