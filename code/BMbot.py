@@ -1,11 +1,13 @@
 # encoding: utf-8:
-from copy import deepcopy
+import uuid
 import json
 import aiohttp
 import time
 import traceback
 
-from khl import Bot, Message,PrivateMessage
+from typing import Union
+from copy import deepcopy
+from khl import Bot, Message,PrivateMessage,ChannelPrivacyTypes
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
 
 
@@ -247,7 +249,12 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
 #####################################服务器实时监控############################################
 
 with open("./log/server.json",'r',encoding='utf-8') as fr1:
-    BmList = json.load(fr1)
+    BmDict = json.load(fr1)
+
+#获取uuid
+def get_uuid():
+    get_timestamp_uuid = uuid.uuid1()  # 根据 时间戳生成 uuid , 保证全球唯一
+    return get_timestamp_uuid
 
 # 检查指定服务器并更新
 async def ServerCheck_ID(id:str,icon:str="err"):
@@ -324,7 +331,7 @@ async def check_server_id(msg:Message,server:str="err"):
         await msg.reply(cm)
 
     except Exception as result:
-        err_str=f"ERR! [{GetTime()}] sv\n```\n{traceback.format_exc()}\n```"
+        err_str=f"ERR! [{GetTime()}] sv:{server}\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         cm2 = CardMessage()
         c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
@@ -335,22 +342,18 @@ async def check_server_id(msg:Message,server:str="err"):
         cm2.append(c)
         await msg.reply(cm2)
 
-# # 用于保存实时监控信息的字典
-# ServerDict = {
-#     'guild': '', 
-#     'channel': '', 
-#     'bm_server':'', 
-#     'icon': '', 
-#     'msg_id': ''
-# }
 
 #保存服务器id的对应关系
-@bot.command(name='BMlook',aliases=['监看'])
-async def save_dict(msg: Message,server:str="err",icon:str="err"):
+@bot.command(name='BMlook',aliases=['监看','bmlk'])
+async def Add_bmlk(msg: Message,server:str="err",icon:str="err",*args):
     logging(msg)
     if server == "err":
-        await msg.reply(f"函数传参错误！server_id:`{server}`\n")
+        await msg.reply(f"函数传参错误！server_id:`{server}`")
         return
+    elif args != ():
+        await msg.reply(f"函数存在多余参数，请检查！\nserver: `{server}`\nicon: `{icon}`\n多余参数: `{args}`")
+        return
+    
     try:
         ServerDict = {
             'guild': msg.ctx.guild.id, 
@@ -368,8 +371,8 @@ async def save_dict(msg: Message,server:str="err",icon:str="err"):
             ServerDict['icon']=x3
 
         flag = 0
-        global BmList
-        for s in BmList:
+        global BmDict
+        for uid,s in BmDict['data'].items():
             if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server'] == server:
                 s['icon']= ServerDict['icon'] #如果其余三个条件都吻合，即更新icon
                 flag =1
@@ -391,14 +394,16 @@ async def save_dict(msg: Message,server:str="err",icon:str="err"):
             sent = await bot.send(ch,cm1)
             ServerDict['msg_id']= sent['msg_id']#设置第一个msg_id
             #将完整的ServerDict添加进list
-            BmList.append(ServerDict)
+            key_uuid = get_uuid()
+            key_uuid = str(key_uuid)
+            BmDict['data'][key_uuid]={}
+            BmDict['data'][key_uuid]=ServerDict
         
         #不管是否已存在，都需要重新执行写入（更新/添加）
         with open("./log/server.json",'w',encoding='utf-8') as fw1:
-            json.dump(BmList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
-        fw1.close()
+            json.dump(BmDict,fw1,indent=2,sort_keys=True, ensure_ascii=False) 
         #打印日志来记录是否进行了修改
-        print(f"[BMlook] flag={flag} [1-Modify,0-Add]")
+        print(f"[BMlook] s:{server} ic:{ServerDict['icon']} f:{flag} [1-Modify,0-Add]")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] BMlook\n```\n{traceback.format_exc()}\n```"
         print(err_str)
@@ -414,35 +419,40 @@ async def save_dict(msg: Message,server:str="err",icon:str="err"):
 
 # 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
 @bot.command(name='td',aliases=['退订'])#td退订
-async def Cancel_Dict(msg: Message,server:str=""):
+async def Cancel_bmlk(msg: Message,server:str="",*args):
     logging(msg)
     try:
-        global BmList
-        #创建空list
-        emptyList = list() 
+        global BmDict
+        TempDict = deepcopy(BmDict)
         flag=0 #用于判断
-        for s in BmList:
+        for uid,s in BmDict['data'].items():
             #如果吻合，则执行删除操作
             if s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and s['bm_server']==server:
                 flag=1
-                print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
+                del TempDict['data'][uid]#删除指定频道
+                print(f"[Cancel] G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
                 await msg.reply(f"已成功取消{server}的监看")
+                break #指定了服务器id，则只删除一个
             elif s['guild'] == msg.ctx.guild.id and s['channel'] == msg.ctx.channel.id and server=="":
-                flag=1
-                print(f"Cancel: G:{s['guild']} - C:{s['channel']} - BM: ALL")
-                await msg.reply(f"已成功取消本频道下所有监看")
-            else: # 不吻合，进行插入
-                #插入进空list
-                emptyList.append(s)
+                flag=2
+                del TempDict['data'][uid]
+                print(f"[Cancel] G:{s['guild']} - C:{s['channel']} - BM:{s['bm_server']}")
+            else: #不吻合则不执行操作
+                continue
 
-        BmList=emptyList
-        #最后重新执行写入
-        with open("./log/server.json",'w',encoding='utf-8') as fw1:
-            json.dump(BmList,fw1,indent=2,sort_keys=True, ensure_ascii=False)        
-        fw1.close()
-
+        if flag == 2:
+            await msg.reply(f"已成功取消本频道下所有监看")
+            print(f"[Cancel.Reply] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - BM:ALL")
+        
         if flag == 0:
             await msg.reply(f"本频道暂未开启任何服务器监看")
+            print(f"[Cancel] nothing to cancel")
+        else:
+            #有修改，重新执行写入
+            BmDict=TempDict
+            with open("./log/server.json",'w',encoding='utf-8') as fw1:
+                json.dump(BmDict,fw1,indent=2,sort_keys=True, ensure_ascii=False)
+            print(f"[Cancel] type:{flag}  save_files")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] td\n```\n{traceback.format_exc()}\n```"
         print(err_str)
@@ -452,51 +462,50 @@ async def Cancel_Dict(msg: Message,server:str=""):
 
 # 实时检测并更新
 @bot.task.add_interval(minutes=20)
-async def update_Server():
+async def update_Server_bmlk():
+    print(f"[BOT.TASK] update_Server begin [{GetTime()}]")
+    debug_channel = await bot.fetch_public_channel(Debug_CL)
     try:
-        print("[BOT.TASK] update_Server begin!")
-        global BmList
-        TempList = deepcopy(BmList)
-        for s in TempList:
+        global BmDict
+        TempDict = deepcopy(BmDict)
+        for uid,s in BmDict['data'].items():
             try:
-                print("Updating: %s"%s)
+                print("[BOT.TASK] Updating: %s"%s)
                 gu=await bot.fetch_guild(s['guild'])
                 ch=await bot.fetch_public_channel(s['channel'])
                 #BMid=s['bm_server']
                 cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
                 
-                now_time = GetTime()
                 if s['msg_id'] != "":
                     url = kook+"/api/v3/message/delete"#删除旧的服务器信息
                     params = {"msg_id":s['msg_id']}
                     async with aiohttp.ClientSession() as session:
                         async with session.post(url, data=params,headers=headers) as response:
                             ret=json.loads(await response.text())
-                            print(f"[{now_time}] Delete:{ret['message']}")#打印删除信息的返回
+                            print(f"[BOT.TASK] Delete:{ret['message']}")#打印删除信息的返回
 
                 sent = await bot.send(ch,cm)
-                s['msg_id']= sent['msg_id']# 更新msg_id
-                print(f"[{now_time}] SENT_MSG_ID:{sent['msg_id']}\n")#打印日志
-                
+                TempDict['data'][uid]['msg_id'] = sent['msg_id']# 更新msg_id
+                print(f"[BOT.TASK] SENT_MSG_ID:{sent['msg_id']}")#打印日志
+
             except Exception as result:
-                err_str=f"ERR! [{GetTime()}] updating {s['msg_id']}\n```\n{traceback.format_exc()}\n```"
-                TempList.pop(s)
-                err_str+=f"TempList pop[{s}]"
+                err_cur = str(traceback.format_exc())
+                err_str=f"ERR! [{GetTime()}] updating {s['msg_id']}\n```\n{err_cur}\n```"
+                if '没有权限' in err_cur:
+                    del TempDict['data'][uid]
+                    err_str+=f"\nTempDict del:{s}\n"
                 #发送错误信息到指定频道
                 print(err_str)
-                debug_channel= await bot.fetch_public_channel(Debug_CL)
                 await bot.send(debug_channel,err_str)
         
-        BmList = TempList
+        BmDict = TempDict
         with open("./log/server.json", "w", encoding='utf-8') as f:
-            json.dump(BmList, f,indent=2,sort_keys=True, ensure_ascii=False)
-        f.close()
-        print("[BOT.TASK] update_Server finished!")
+            json.dump(BmDict, f,indent=2,sort_keys=True, ensure_ascii=False)
+        print(f"[BOT.TASK] update_Server finished [{GetTime()}]")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         #发送错误信息到指定频道
-        debug_channel= await bot.fetch_public_channel(Debug_CL)
         await bot.send(debug_channel,err_str)
 
 
