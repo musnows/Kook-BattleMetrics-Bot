@@ -68,7 +68,7 @@ async def Help(msg: Message):
     text+="`/spy 玩家昵称` 通过昵称检索玩家（暂无法解决同名问题）\n"
     text+="`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n"
     text+="`/sv 服务器id` 查询指定服务器的相关信息;\n"
-    text+="`/bmlk 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白;\n"
+    text+="`/bmlk 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白 [图标url获取教程](https://s1.ax1x.com/2022/09/30/xu8got.png)\n"
     text+="`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看"
     c3.append(Module.Section(Element.Text(text,Types.Text.KMD)))
     c3.append(Module.Divider())
