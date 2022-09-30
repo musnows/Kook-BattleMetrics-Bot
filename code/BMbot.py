@@ -55,7 +55,7 @@ async def world(msg: Message):
     await msg.reply('world!')
 
 # 帮助命令
-@bot.command(name='BMhelp')
+@bot.command(name='BMhelp',aliases=['bmhelp'])
 async def Help(msg: Message):
     logging(msg)
     cm = CardMessage()
@@ -68,7 +68,7 @@ async def Help(msg: Message):
     text+="`/spy 玩家昵称` 通过昵称检索玩家（暂无法解决同名问题）\n"
     text+="`/py 玩家id 服务器id` 查询玩家在该服务器游玩时长;\n"
     text+="`/sv 服务器id` 查询指定服务器的相关信息;\n"
-    text+="`/监看 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白;\n"
+    text+="`/bmlk 服务器id 图标url` 在本频道开启对指定服务器状态的自动更新，可通过图标url为卡片消息添加个性化logo。建议分辨率`128*128`，且不要在图标周围留太多空白;\n"
     text+="`/td 服务器id` 取消服务器状态更新，若不传入服务器id则默认取消本频道的全部监看"
     c3.append(Module.Section(Element.Text(text,Types.Text.KMD)))
     c3.append(Module.Divider())
@@ -202,9 +202,6 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
         await msg.reply(cm2)
             
     
-
-    
-
 # 查看玩家在某个服务器玩了多久，需要玩家id和bm服务器id
 @bot.command(name='py',aliases=['player'])
 async def player_check(msg: Message, player_id: str="err", server_id: str="err"):
