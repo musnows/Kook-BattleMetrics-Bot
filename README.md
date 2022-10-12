@@ -58,6 +58,8 @@ pip install khl.py
 python3 BM_main.py
 ~~~
 
+关于code里面的makefile，这是用于linux下快速启动bot后台运行的。如果你想在自己的linux服务器使用，请把里面的`py3`改成你自己云服务器上的python（就是用来命令行运行python程序的哪一个，如`python3`）
+
 ## 最后
 
 如果你觉得本项目还不错，还请点个STAR✨
