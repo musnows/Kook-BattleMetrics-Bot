@@ -485,6 +485,9 @@ async def update_Server_bmlk():
                 if '没有权限' in err_cur:
                     del TempDict['data'][uid]
                     err_str+=f"\nTempDict del:{s}\n"
+                elif "'GET guild/view' failed with 403" in err_cur:
+                    del TempDict['data'][uid]
+                    err_str+= f"\nTempDict del:{s}\n"
                 #发送错误信息到指定频道
                 print(err_str)
                 await bot.client.send(debug_channel,err_str)
@@ -494,7 +497,8 @@ async def update_Server_bmlk():
             json.dump(BmDict, f,indent=2,sort_keys=True, ensure_ascii=False)
         print(f"[BOT.TASK] update_Server finished [{GetTime()}]")
     except Exception as result:
-        err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
+        err_cur = str(traceback.format_exc())
+        err_str=f"ERR! [{GetTime()}] update_server\n```\n{err_cur}\n```"
         print(err_str)
         #发送错误信息到指定频道
         await bot.client.send(debug_channel,err_str)
