@@ -459,7 +459,7 @@ async def update_Server_bmlk():
     try:
         global BmDict
         TempDict = deepcopy(BmDict)
-        for uid,s in BmDict['data'].items():
+        for uid,s in TempDict['data'].items():
             try:
                 print("[BOT.TASK] Updating: %s"%s)
                 gu=await bot.client.fetch_guild(s['guild'])
@@ -476,23 +476,22 @@ async def update_Server_bmlk():
                             print(f"[BOT.TASK] Delete:{ret['message']}")#打印删除信息的返回
 
                 sent = await bot.client.send(ch,cm)
-                TempDict['data'][uid]['msg_id'] = sent['msg_id']# 更新msg_id
+                BmDict['data'][uid]['msg_id'] = sent['msg_id']# 更新msg_id
                 print(f"[BOT.TASK] SENT_MSG_ID:{sent['msg_id']}")#打印日志
 
             except Exception as result:
                 err_cur = str(traceback.format_exc())
                 err_str=f"ERR! [{GetTime()}] updating {s['msg_id']}\n```\n{err_cur}\n```"
                 if '没有权限' in err_cur:
-                    del TempDict['data'][uid]
-                    err_str+=f"\nTempDict del:{s}\n"
+                    del BmDict['data'][uid]
+                    err_str+=f"\nBmDict del:{s}\n"
                 elif "'GET guild/view' failed with 403" in err_cur:
-                    del TempDict['data'][uid]
-                    err_str+= f"\nTempDict del:{s}\n"
+                    del BmDict['data'][uid]
+                    err_str+= f"\nBmDict del:{s}\n"
                 #发送错误信息到指定频道
                 print(err_str)
                 await bot.client.send(debug_channel,err_str)
         
-        BmDict = TempDict
         with open("./log/server.json", "w", encoding='utf-8') as f:
             json.dump(BmDict, f,indent=2,sort_keys=True, ensure_ascii=False)
         print(f"[BOT.TASK] update_Server finished [{GetTime()}]")
