@@ -1,9 +1,10 @@
 # Kook-BattleMetrics-Bot
+
 A Kook-Bot to search BattleMetrics-Server
 
 BattleMetrics是一个游戏服务器聚合网站，可以追踪并查询游戏服务器当前的信息
 
->BM官网：https://www.battlemetrics.com/
+> BM官网：https://www.battlemetrics.com/
 
 ## 如何使用？
 
@@ -21,7 +22,7 @@ BattleMetrics是一个游戏服务器聚合网站，可以追踪并查询游戏�
 
 结果示例图：
 
-<img src="./screenshots/bmlk.png" wight="400px" height="300px">
+<img src="./screenshots/bmlk.png" wight="400px" height="300px" alt="bmlk">
 
 
 ## 私有部署
@@ -50,6 +51,8 @@ pip install khl.py
 ```
 
 请务必删除掉`L18-24`和`botmarket`相关的内容。避免接口冲突！
+
+https://github.com/Aewait/Kook-BattleMetrics-Bot/blob/a895e3cf73b5ac52cc247125b677e933a5d2cd7d/code/BMbot.py#L19-L25
 
 ### 运行bot
 
