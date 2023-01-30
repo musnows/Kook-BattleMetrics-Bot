@@ -1,8 +1,6 @@
 # encoding: utf-8:
-import uuid
 import json
 import aiohttp
-import time
 import traceback
 import os
 
@@ -13,9 +11,10 @@ from endpoints import upd_card,logging,log_err_cm,GetTime,get_uuid,bmUrl,config
 
 # 用读取来的 config 初始化 bot
 bot = Bot(token=config['token'])
-Botoken = config['token']
-headers={f'Authorization': f"Bot {Botoken}"}
 debug_ch = None
+# 读取server文件
+with open("./log/server.json",'r',encoding='utf-8') as fr1:
+    BmDict = json.load(fr1)
 
 # 向botmarket通信
 @bot.task.add_interval(minutes=29)
@@ -217,13 +216,6 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
 
 #####################################服务器实时监控############################################
 
-with open("./log/server.json",'r',encoding='utf-8') as fr1:
-    BmDict = json.load(fr1)
-
-#获取uuid
-def get_uuid():
-    get_timestamp_uuid = uuid.uuid1()  # 根据 时间戳生成 uuid , 保证全球唯一
-    return get_timestamp_uuid
 
 # 检查指定服务器并更新
 async def ServerCheck_ID(id:str,icon:str="err"):
