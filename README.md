@@ -15,18 +15,18 @@ BattleMetrics是一个游戏服务器聚合网站，可以追踪并查询游戏�
 | `/BM 萌新 hll 4`                | 显示游戏`hll`服务器中名称包含`萌新`的前4个结果               |
 | `/py bm玩家id bm服务器id`       | 查询玩家在该服务器的游玩时间                                 |
 | `/sv bm服务器id`                | 查询指定服务器的状态                                         |
-| `/BMlook bm服务器id 个性化icon` | 自动在本频道更新指定服务器的信息，可传入icon-url让卡片带上你们服务器的专属头像 |
+| `/bmlk bm服务器id 个性化icon` | 自动在本频道更新指定服务器的信息，可传入icon-url让卡片带上你们服务器的专属头像 |
 | `/td bm服务器id`                | 取消本频道对指定服务器的监看，如果不传入服务器id，则默认取消全部监看 |
 
 
 结果示例图：
 
-<img src="https://s1.ax1x.com/2022/07/24/jjwsNd.png" wight="400px" height="330px">
+<img src="./screenshots/bmlk.png" wight="400px" height="300px">
 
-<img src="https://s1.ax1x.com/2022/07/26/jzXzpF.png" wight="400px" height="175px">
 
 ## 私有部署
-* 依赖项
+
+### 依赖项
 
 KOOK-Bot架构基于[khl.py](https://github.com/TWT233/khl.py/tree/main)，而访问BattleMetrics的api基于`aiohttp`
 
@@ -38,24 +38,23 @@ pip install khl.py
 
 注：安装之前请确保你的Python版本高于`3.7`
 
-* bot-token
+### config
 
 在 `code/config`路径中添加`config.json`，并在里面填入以下内容来初始化你的Bot（连接方式为`websocket`）
 
 ```
 {
-    "token": " YOUR BOT TOKEN HERE ",
-    "verify_token": "",
-    "encrypt_key": ""
+    "token": "bot websocket token",
+    "debug_ch": "debug channel id"
 }
 ```
 
-另外，请删除掉`L18-24`和`botmarket`相关的内容。避免接口冲突！
+请务必删除掉`L18-24`和`botmarket`相关的内容。避免接口冲突！
 
-* 运行bot
+### 运行bot
 
 ~~~
-python3 BM_main.py
+python3 BMbot.py
 ~~~
 
 关于code里面的makefile，这是用于linux下快速启动bot后台运行的。如果你想在自己的linux服务器使用，请把里面的`py3`改成你自己云服务器上的python（就是用来命令行运行python程序的哪一个，如`python3`）

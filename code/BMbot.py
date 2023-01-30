@@ -21,7 +21,7 @@ debug_ch = None
 @bot.task.add_interval(minutes=29)
 async def botmarket():
     api ="http://bot.gekj.net/api/v1/online.bot"
-    headers = {'uuid':'fbb98686-91fe-46b5-be2c-cf146cccc822'}
+    headers = {'uuid':config['botmarket']}
     async with aiohttp.ClientSession() as session:
         await session.post(api, headers=headers)
 
@@ -420,7 +420,7 @@ async def Cancel_bmlk(msg: Message,server:str="",*args):
         await bot.client.send(debug_ch,err_str)
 
 # 实时检测并更新
-@bot.task.add_interval(minutes=1)
+@bot.task.add_interval(minutes=20)
 async def update_Server_bmlk():
     print(f"[BOT.TASK] update_Server begin [{GetTime()}]")
     try:
