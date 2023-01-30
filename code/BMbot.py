@@ -9,22 +9,13 @@ import os
 from copy import deepcopy
 from khl import Bot, Message,PrivateMessage
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
-from endpoints import upd_card
+from endpoints import upd_card,logging,log_err_cm,GetTime,get_uuid,bmUrl,config
 
-
-# 新建机器人，token 就是机器人的身份凭证
-# 用 json 读取 config.json，装载到 config 里
-with open('./config/config.json', 'r', encoding='utf-8') as f:
-    config = json.load(f)
 # 用读取来的 config 初始化 bot
 bot = Bot(token=config['token'])
-
-BMurl = "https://api.battlemetrics.com" #bm api的父url
-kook="https://www.kookapp.cn"# kook api的父url
 Botoken = config['token']
 headers={f'Authorization': f"Bot {Botoken}"}
-Debug_CL="6248953582412867"
-debug_channel = None
+debug_ch = None
 
 # 向botmarket通信
 @bot.task.add_interval(minutes=29)
@@ -36,28 +27,6 @@ async def botmarket():
 
 
 ######################################################################################
-
-def GetTime():
-    return time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
-
-
-# 在控制台打印msg内容，用作日志
-def logging(msg: Message):
-    now_time = GetTime()
-    if isinstance(msg,PrivateMessage):
-        print(f"[{now_time}] PrivateMessage - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
-    else:
-        print(f"[{now_time}] G:{msg.ctx.guild.id} - C:{msg.ctx.channel.id} - Au:{msg.author_id}_{msg.author.username}#{msg.author.identify_num} = {msg.content}")
-
-def log_err_cm(err_str:str):
-    cm2 = CardMessage()
-    c = Card(Module.Header(f"很抱歉，发生了一些错误"), Module.Context(f"提示:出现json/data错误是因为查询结果不存在"),Module.Divider())
-    c.append(Module.Section(Element.Text(f"{err_str}\n您可能需要重新操作",Types.Text.KMD)))
-    c.append(Module.Divider())
-    c.append(Module.Section('有任何问题，请加入帮助服务器与我联系',
-        Element.Button('帮助', 'https://kook.top/gpbTwZ', Types.Click.LINK)))
-    cm2.append(c)
-    return cm2
 
 # 测试bot是否上线
 @bot.command(name='hi',aliases=['HI'])
@@ -93,7 +62,7 @@ async def Help(msg: Message):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
 
 
 # 查询服务器信息
@@ -110,9 +79,9 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
 
     global ret
     try:
-        url = BMurl+f'/servers?filter[search]={name}&filter[game]={game}'
+        url = bmUrl+f'/servers?filter[search]={name}&filter[game]={game}'
         if game == "err": #如果不指定游戏，就直接搜索关键字
-            url = BMurl+f'/servers?filter[search]={name}'
+            url = bmUrl+f'/servers?filter[search]={name}'
         
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
@@ -158,7 +127,7 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
 
 
 # 通过关键字查找玩家
@@ -171,9 +140,9 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
     
     global ret1
     try:
-        url1 = BMurl+f'/players?filter[search]={key}'
+        url1 = bmUrl+f'/players?filter[search]={key}'
         if game != 'err':
-            url1 = BMurl+f'/players?filter[search]={key}&filter[server][game]={game}'
+            url1 = bmUrl+f'/players?filter[search]={key}&filter[server][game]={game}'
         
         async with aiohttp.ClientSession() as session:
             async with session.get(url1) as response:
@@ -207,7 +176,7 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
             
     
 # 查看玩家在某个服务器玩了多久，需要玩家id和bm服务器id
@@ -220,7 +189,7 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
 
     global ret1
     try:
-        url1 = BMurl+f'/players/{player_id}/servers/{server_id}'
+        url1 = bmUrl+f'/players/{player_id}/servers/{server_id}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url1) as response:
                 ret1 = json.loads(await response.text())
@@ -230,7 +199,7 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
         h, m = divmod(m, 60)
         time_played = f"{h}时{m}分{s}秒"
 
-        url2=BMurl+f"/servers/{server_id}"
+        url2=bmUrl+f"/servers/{server_id}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url2) as response:
                 ret2 = json.loads(await response.text())
@@ -243,7 +212,7 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
 
 
 #####################################服务器实时监控############################################
@@ -334,7 +303,7 @@ async def check_server_id(msg:Message,server:str="err"):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
 
 
 #保存服务器id的对应关系
@@ -403,7 +372,7 @@ async def Add_bmlk(msg: Message,server:str="err",icon:str="err",*args):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
 
 
 # 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
@@ -446,10 +415,9 @@ async def Cancel_bmlk(msg: Message,server:str="",*args):
         err_str=f"ERR! [{GetTime()}] td\n```\n{traceback.format_exc()}\n```"
         print(err_str)
         #发送错误信息到指定频道
-        #debug_channel= await bot.client.fetch_public_channel(Debug_CL)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
 
 # 实时检测并更新
 @bot.task.add_interval(minutes=1)
@@ -479,7 +447,7 @@ async def update_Server_bmlk():
                     del BmDict['data'][uid]
                     err_str+=f"\nBmDict del:{s}\n"
                 # 发送错误信息到指定频道
-                await bot.client.send(debug_channel,err_str)
+                await bot.client.send(debug_ch,err_str)
                 print(err_str)
         
         with open("./log/server.json", "w", encoding='utf-8') as f:
@@ -487,7 +455,7 @@ async def update_Server_bmlk():
         print(f"[BOT.TASK] update_Server finished [{GetTime()}]")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
-        await bot.client.send(debug_channel,err_str)
+        await bot.client.send(debug_ch,err_str)
         print(err_str)
 
 
@@ -495,9 +463,9 @@ async def update_Server_bmlk():
 @bot.task.add_date()
 async def fetch_channel():
     try:
-        global debug_channel
-        debug_channel = await bot.client.fetch_public_channel(Debug_CL)
-        print(f"[BOT.TASK] fetch_public_channel(Debug_CL) success")
+        global debug_ch
+        debug_ch = await bot.client.fetch_public_channel(config['debug_ch'])
+        print(f"[BOT.TASK] fetch_public_channel({config['debug_ch']}) success")
     except:
         err_str=f"ERR! [{GetTime()}] fetch_channel\n```\n{traceback.format_exc()}\n```"
         print(err_str)
