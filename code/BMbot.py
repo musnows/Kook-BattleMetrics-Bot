@@ -6,10 +6,10 @@ import time
 import traceback
 import os
 
-from typing import Union
 from copy import deepcopy
-from khl import Bot, Message,PrivateMessage,ChannelPrivacyTypes
+from khl import Bot, Message,PrivateMessage
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
+from endpoints import upd_card
 
 
 # 新建机器人，token 就是机器人的身份凭证
@@ -263,7 +263,6 @@ async def ServerCheck_ID(id:str,icon:str="err"):
         async with session.get(url) as response:
             ret1 = json.loads(await response.text())
 
-        #print(f"\nGET: {ret1}\n") #取消打印，只有出现问题的时候再打印
         server = ret1['data']
         # 确认状态情况
         emoji = ":green_circle:"
@@ -311,9 +310,9 @@ async def ServerCheck_ID(id:str,icon:str="err"):
                         f"{server['attributes']['players']}/{server['attributes']['maxPlayers']}",
                         Types.Text.KMD))))
 
-        #steam://connect/{server['attributes']['ip']}:{server['attributes']['port']}
-        c.append(Module.Context(Element.Text(f"在bm官网查看[详细信息](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']}) 或 [直接加入游戏](https://www.kookapp.cn/go-wild.html?url=steam://connect/{server['attributes']['ip']}:{server['attributes']['port']})",Types.Text.KMD)))
-
+        sub_text =f"在bm官网查看[详细信息](https://www.battlemetrics.com/servers/{server['relationships']['game']['data']['id']}/{server['id']}) 或 [直接加入游戏](https://www.kookapp.cn/go-wild.html?url=steam://connect/{server['attributes']['ip']}:{server['attributes']['port']})"
+        sub_text+=f"\n本消息更新于 {GetTime()}"
+        c.append(Module.Context(Element.Text(sub_text,Types.Text.KMD)))
         cm.append(c)
         return cm
        
@@ -453,7 +452,7 @@ async def Cancel_bmlk(msg: Message,server:str="",*args):
         await bot.client.send(debug_channel,err_str)
 
 # 实时检测并更新
-@bot.task.add_interval(minutes=20)
+@bot.task.add_interval(minutes=1)
 async def update_Server_bmlk():
     print(f"[BOT.TASK] update_Server begin [{GetTime()}]")
     try:
@@ -461,49 +460,38 @@ async def update_Server_bmlk():
         TempDict = deepcopy(BmDict)
         for uid,s in TempDict['data'].items():
             try:
-                print("[BOT.TASK] Updating: %s"%s)
-                gu=await bot.client.fetch_guild(s['guild'])
+                print(f"[BOT.TASK] Updating: {s}")
                 ch=await bot.client.fetch_public_channel(s['channel'])
-                #BMid=s['bm_server']
                 cm =await ServerCheck_ID(s['bm_server'],s['icon'])#获取卡片消息
                 
+                sent = {'msg_id':''}
                 if s['msg_id'] != "":
-                    url = kook+"/api/v3/message/delete"#删除旧的服务器信息
-                    params = {"msg_id":s['msg_id']}
-                    async with aiohttp.ClientSession() as session:
-                        async with session.post(url, data=params,headers=headers) as response:
-                            ret=json.loads(await response.text())
-                            print(f"[BOT.TASK] Delete:{ret['message']}")#打印删除信息的返回
-
-                sent = await bot.client.send(ch,cm)
-                BmDict['data'][uid]['msg_id'] = sent['msg_id']# 更新msg_id
-                print(f"[BOT.TASK] SENT_MSG_ID:{sent['msg_id']}")#打印日志
-
+                    sent = await upd_card(s['msg_id'],cm) # 更新消息
+                else:
+                    sent = await bot.client.send(ch,cm) # 发送消息
+                    BmDict['data'][uid]['msg_id'] = sent['msg_id']# 更新msg_id
+                
+                print(f"[BOT.TASK] SENT_MSG_ID:{BmDict['data'][uid]['msg_id']}")#打印日志
             except Exception as result:
                 err_cur = str(traceback.format_exc())
                 err_str=f"ERR! [{GetTime()}] updating {s['msg_id']}\n```\n{err_cur}\n```"
-                if '没有权限' in err_cur:
+                if ("没有权限" in err_cur) or ("'GET guild/view' failed with 403" in err_cur):
                     del BmDict['data'][uid]
                     err_str+=f"\nBmDict del:{s}\n"
-                elif "'GET guild/view' failed with 403" in err_cur:
-                    del BmDict['data'][uid]
-                    err_str+= f"\nBmDict del:{s}\n"
-                #发送错误信息到指定频道
-                print(err_str)
+                # 发送错误信息到指定频道
                 await bot.client.send(debug_channel,err_str)
+                print(err_str)
         
         with open("./log/server.json", "w", encoding='utf-8') as f:
             json.dump(BmDict, f,indent=2,sort_keys=True, ensure_ascii=False)
         print(f"[BOT.TASK] update_Server finished [{GetTime()}]")
     except Exception as result:
-        err_cur = str(traceback.format_exc())
-        err_str=f"ERR! [{GetTime()}] update_server\n```\n{err_cur}\n```"
-        print(err_str)
-        #发送错误信息到指定频道
+        err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
         await bot.client.send(debug_channel,err_str)
+        print(err_str)
 
 
-
+# 开机任务
 @bot.task.add_date()
 async def fetch_channel():
     try:
