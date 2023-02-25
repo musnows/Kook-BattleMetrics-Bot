@@ -364,7 +364,7 @@ async def Add_bmlk(msg: Message,server:str="err",icon:str="err",*args):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_ch,err_str)
+        # await bot.client.send(debug_ch,err_str)
 
 
 # 删除在某个频道的监看功能(需要传入服务器id，否则默认删除全部)
