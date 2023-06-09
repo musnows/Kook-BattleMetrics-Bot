@@ -5,24 +5,31 @@ import traceback
 import os
 
 from copy import deepcopy
-from khl import Bot, Message,PrivateMessage
+from khl import Bot, Message,PrivateMessage,Cert
 from khl.card import CardMessage, Card, Module, Element, Types, Struct
 from endpoints import upd_card,logging,log_err_cm,GetTime,get_uuid,bmUrl,config
 
 # 用读取来的 config 初始化 bot
-bot = Bot(token=config['token'])
+bot = Bot(token=config['token']) # websocket
+if not config['ws']:
+    bot = Bot(cert=Cert(token=config['token'],
+                    verify_token=config['verify_token'],
+                    encrypt_key=config['encrypt'])) # webhook
+    
 debug_ch = None
+"""debug频道"""
 # 读取server文件
 with open("./log/server.json",'r',encoding='utf-8') as fr1:
     BmDict = json.load(fr1)
 
 # 向botmarket通信
-@bot.task.add_interval(minutes=29)
-async def botmarket():
-    api ="http://bot.gekj.net/api/v1/online.bot"
-    headers = {'uuid':config['botmarket']}
-    async with aiohttp.ClientSession() as session:
-        await session.post(api, headers=headers)
+if 'botmarket' in config and config['botmarket'] != "":
+    @bot.task.add_interval(minutes=29)
+    async def botmarket():
+        api ="http://bot.gekj.net/api/v1/online.bot"
+        headers = {'uuid':config['botmarket']}
+        async with aiohttp.ClientSession() as session:
+            await session.post(api, headers=headers)
 
 
 ######################################################################################
@@ -472,8 +479,9 @@ async def fetch_channel():
         print(err_str)
         os._exit(-1)
 
-#添加全局print命令写入log，来得知自己什么时候重启了bot
-print(f"Start at: [%s]" % GetTime())
 
-# 开跑！
-bot.run()
+if __name__ == '__main__':
+    #添加全局print命令写入log，来得知自己什么时候重启了bot
+    print(f"Start at: [%s]" % GetTime())
+    # 开跑！
+    bot.run()

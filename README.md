@@ -45,7 +45,10 @@ pip install khl.py
 
 ```
 {
-    "token": "bot websocket token",
+    "token":"bot webhook/websocket token",
+    "verify_token":"bot webhook verify token",
+    "encrypt":"bot webhook encrypt token",
+    "ws":true,
     "debug_ch": "debug channel id"
 }
 ```
