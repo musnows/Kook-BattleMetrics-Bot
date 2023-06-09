@@ -126,7 +126,8 @@ async def BM_Check(msg: Message, name: str ="err", game: str="err",max:int = 3):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_ch,err_str)
+        if not ('connet' in err_str or 'json' in err_str or '权限' in err_str):
+            await bot.client.send(debug_ch,err_str) # 发送到日志频道
 
 
 # 通过关键字查找玩家
@@ -175,7 +176,8 @@ async def player_id(msg: Message, key:str='err',game:str='err'):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_ch,err_str)
+        if not ('connet' in err_str or 'json' in err_str or '权限' in err_str):
+            await bot.client.send(debug_ch,err_str) # 发送到日志频道
             
     
 # 查看玩家在某个服务器玩了多久，需要玩家id和bm服务器id
@@ -211,7 +213,8 @@ async def player_check(msg: Message, player_id: str="err", server_id: str="err")
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_ch,err_str)
+        if not ('connet' in err_str or 'json' in err_str or '权限' in err_str):
+            await bot.client.send(debug_ch,err_str) # 发送到日志频道
 
 
 #####################################服务器实时监控############################################
@@ -295,7 +298,8 @@ async def check_server_id(msg:Message,server:str="err"):
         print(err_str)
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_ch,err_str)
+        if not ('connet' in err_str or 'json' in err_str or '权限' in err_str):
+            await bot.client.send(debug_ch,err_str) # 发送到日志频道
 
 
 #保存服务器id的对应关系
@@ -409,7 +413,8 @@ async def Cancel_bmlk(msg: Message,server:str="",*args):
         #发送错误信息到指定频道
         cm = log_err_cm(err_str)
         await msg.reply(cm)
-        await bot.client.send(debug_ch,err_str)
+        if not ('connet' in err_str or 'json' in err_str or '权限' in err_str):
+            await bot.client.send(debug_ch,err_str) # 发送到日志频道
 
 # 实时检测并更新
 @bot.task.add_interval(minutes=20)
@@ -438,6 +443,9 @@ async def update_Server_bmlk():
                 if ("没有权限" in err_cur) or ("'GET guild/view' failed with 403" in err_cur):
                     del BmDict['data'][uid]
                     err_str+=f"\nBmDict del:{s}\n"
+                elif 'connect' in err_cur or 'json' in err_cur:
+                    print(f"ERR! [{GetTime()}] updating {s['msg_id']} | {str(result)}")
+                    continue
                 # 发送错误信息到指定频道
                 await bot.client.send(debug_ch,err_str)
                 print(err_str)
@@ -447,8 +455,9 @@ async def update_Server_bmlk():
         print(f"[BOT.TASK] update_Server finished [{GetTime()}]")
     except Exception as result:
         err_str=f"ERR! [{GetTime()}] update_server\n```\n{traceback.format_exc()}\n```"
-        await bot.client.send(debug_ch,err_str)
         print(err_str)
+        if not ('connet' in err_str or 'json' in err_str or '权限' in err_str):
+            await bot.client.send(debug_ch,err_str) # 发送到日志频道
 
 
 # 开机任务
