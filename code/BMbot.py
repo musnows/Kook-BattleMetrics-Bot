@@ -14,7 +14,7 @@ bot = Bot(token=config['token']) # websocket
 if not config['ws']:
     bot = Bot(cert=Cert(token=config['token'],
                     verify_token=config['verify_token'],
-                    encrypt_key=config['encrypt'])) # webhook
+                    encrypt_key=config['encrypt']),port=30004) # webhook
     
 debug_ch = None
 """debug频道"""
