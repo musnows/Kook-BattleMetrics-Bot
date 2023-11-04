@@ -447,7 +447,7 @@ async def update_Server_bmlk():
             except Exception as result:
                 err_cur = str(traceback.format_exc())
                 err_str=f"ERR! [{GetTime()}] updating {s['msg_id']}\n```\n{err_cur}\n```"
-                if ("没有权限" in err_cur) or ("'GET guild/view' failed with 403" in err_cur):
+                if ("没有权限" in err_cur) or ("'GET guild/view' failed with 403" in err_cur) or "'data'" in err_cur:
                     del BmDict['data'][uid]
                     err_str+=f"\nBmDict del:{s}\n"
                 elif 'connect' in err_cur or 'json' in err_cur:
